@@ -1,0 +1,125 @@
+networks:
+  fullstack:
+
+volumes:
+  mysql: ~
+  shared_composer:
+    external: true
+  shared_pnpm:
+    external: true
+
+
+services:
+  proxy:
+    image: nginx:1.29.0-alpine3.22
+    depends_on:
+      - backend
+      - swagger
+      - db
+      - phpmyadmin
+      - docs
+      - mailcatcher
+    networks:
+      - fullstack
+    ports:
+      - 80:80
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./proxy/conf.d:/etc/nginx/conf.d:ro
+
+  frontend:
+     image: idomi27/vue:26
+     build:
+       context: ./frontend
+       dockerfile: Dockerfile
+     volumes:
+       - ./frontend:/app:rw
+       - ./.env:/app/.env:ro
+       - shared_pnpm:/shared_pnpm
+     networks:
+       - fullstack
+
+  backend:
+    image: rcsnjszg/backend2025
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend/php.ini:/usr/local/etc/php/conf.d/php.ini:ro
+      - ./backend:/www:rw
+      - ./.env:/www/.env:rw
+      - shared_composer:/home/phpdocker/.composer
+    networks:
+      - fullstack
+    depends_on:
+     db:
+       condition: service_healthy
+  
+  webserver:
+    image: nginx:1.29.0-alpine3.22
+    depends_on:
+     - backend
+    networks:
+     - fullstack
+    volumes:
+     - ./webserver/nginx.conf:/etc/nginx/nginx.conf:ro
+     - ./webserver/conf.d:/etc/nginx/conf.d:ro
+
+
+
+  db:
+    image: mysql:9.3.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_USER=${DB_USERNAME}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=${DB_DATABASE}
+      - TZ=${TZ}
+    volumes:
+      - mysql:/var/lib/mysql:rw
+#    ports:
+#      - 3306:3306
+    networks:
+      - fullstack
+    healthcheck:
+      test: /usr/bin/mysql --user=root --password=$DB_ROOT_PASSWORD --execute "SHOW DATABASES;"
+      timeout: 5s
+      retries: 18
+
+  phpmyadmin:
+    image: rcsnjszg/phpmyadmin:5.2.2-apache
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - PMA_HOST=${DB_HOST}
+      - PMA_PORT=${DB_PORT}
+      - PMA_ABSOLUTE_URI=${PMA_ABSOLUTE_URI}
+      - UPLOAD_LIMIT=${PMA_UPLOAD_LIMIT}
+    networks:
+      - fullstack
+  
+  docs:
+    image: idomi27/docs:26
+    volumes:
+      - ./docs/content:/app/content:ro
+      - ./docs/public:/app/public:ro
+      - ./.env:/app/.env:ro
+    networks:
+      - fullstack
+
+  swagger:
+    image: swaggerapi/swagger-ui:v5.25.3
+    volumes:
+      - ./swagger/openapi.yaml:/docs/openapi.yaml
+    environment:
+      - SWAGGER_JSON=/docs/openapi.yaml
+      - DISPLAY_OPERATION_ID=true
+      - VALIDATOR_URL=null
+    networks:
+      - fullstack
+  
+  mailcatcher:
+    image: dockage/mailcatcher:0.9.0
+    networks:
+      - fullstack
