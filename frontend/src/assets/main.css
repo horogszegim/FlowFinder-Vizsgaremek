@@ -1,7 +1,73 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
+:root {
+  --primary: hsl(100 100% 60%);
+  --primary-dark: hsl(100 100% 25%);
 
-@custom-variant dark (&:is(.dark *));
+  --bg-dark: hsl(0 0% 90%);
+  --bg: hsl(0 0% 95%);
+  --bg-light: hsl(0 0% 100%);
+
+  --text: hsl(0 0% 5%);
+  --text-muted: hsl(0 0% 20%);
+}
+
+@theme {
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+
+  --color-background-dark: var(--bg-dark);
+  --color-background: var(--bg);
+  --color-background-light: var(--bg-light);
+
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+}
+
+@layer utilities {
+  .shadow-lg-up {
+    box-shadow:
+      0 -10px 15px -3px rgba(0,0,0,0.1),
+      0 -4px 6px -4px rgba(0,0,0,0.1);
+  }
+}
+
+* {
+  font-family: "Inter", sans-serif;
+}
+
+.router-link-exact-active {
+  @apply font-bold text-primary-dark pointer-events-none;
+}
+
+@layer base {
+  body {
+    @apply bg-background-dark text-text-muted;
+  }
+}
+
+.link-hover:hover {
+  color: var(--color-text);
+}
+
+.link-hover::after {
+  content: '';
+  position: absolute;
+  height: 2px;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  background: var(--color-primary-dark);
+  transition: width 0.2s ease-out;
+}
+
+.link-hover:hover::after {
+  width: 100%;
+}
+
+/* 
+custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
@@ -121,3 +187,5 @@
     @apply bg-background text-foreground;
   }
 }
+  
+*/
