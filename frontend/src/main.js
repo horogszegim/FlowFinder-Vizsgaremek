@@ -29,7 +29,7 @@ createApp(App)
             focus:ring-2 focus:ring-primary-dark
           `,
           wrapper: 'my-2',
-          messages: 'text-sm text-red-600 mt-1',
+          messages: 'text-sm font-medium mt-1 text-red-600',
           message: 'block'
         }
       }

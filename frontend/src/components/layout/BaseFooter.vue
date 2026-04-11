@@ -23,9 +23,9 @@
             </div>
 
             <div
-                class="flex flex-col gap-3 order-1 md:order-2 items-start md:items-center md:text-center md:self-center">
+                class="flex flex-col gap-3 order-1 md:order-2 items-start md:items-center md:text-center md:self-center -translate-x-2">
                 <RouterLink to="/" class="flex items-center gap-1.5">
-                    <img src="../../assets/img/dark-logo.svg" alt="logo" class="h-9 w-auto" />
+                    <img src="@assets/img/dark-logo.svg" alt="logo" class="h-9 w-auto" />
                     <span class="text-2xl font-bold text-text">FlowFinder</span>
                 </RouterLink>
 

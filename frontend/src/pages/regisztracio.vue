@@ -1,14 +1,30 @@
 <script setup>
 import BaseLayout from '@layouts/BaseLayout.vue';
 import { useAuthStore } from '@/stores/AuthStore.js';
+import { ref } from 'vue'
 import { useRouter } from 'vue-router';
 
 const auth = useAuthStore();
 const router = useRouter();
+const errorMessage = ref(null)
 
 async function submitForm(data) {
-    await auth.register(data);
-    router.push('/');
+    errorMessage.value = null
+
+    try {
+        await auth.register(data)
+        router.push('/')
+    } catch (error) {
+        if (error.response && error.response.status === 422) {
+            const errors = error.response.data.errors
+
+            if (errors.username) {
+                errorMessage.value = 'A megadott felhasználónév már foglalt!'
+            } else if (errors.email) {
+                errorMessage.value = 'A megadott email cím már regisztrálva van!'
+            }
+        }
+    }
 }
 
 function minLength(node, min) {
@@ -139,6 +155,10 @@ function passwordMatch(node) {
                             required: 'A jelszó megerősítése kötelező!',
                             passwordMatch: 'A két jelszó nem egyezik.',
                         }" />
+
+                    <p v-if="errorMessage" class="text-md font-medium mt-3 text-red-600 text-center">
+                        {{ errorMessage }}
+                    </p>
 
                     <button type="submit"
                         class="mt-5 w-full text-xl font-semibold py-3 bg-primary-dark text-white rounded-xl shadow-lg cursor-pointer

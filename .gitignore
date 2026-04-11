@@ -1,3 +1,12 @@
 **/*/node_modules
 .env
 .DS_Store
+
+backend/storage/app/public/*
+!backend/storage/app/public/.gitignore
+
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+
+backend/storage/logs/*

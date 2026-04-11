@@ -41,8 +41,9 @@ async function submitForm(data) {
 
         <FormKit type="form" :actions="false" @submit="submitForm">
           <FormKit type="email" name="email" label="Email" placeholder="Add meg az email címedet ..."
-            validation="required" validation-visibility="dirty" :validation-messages="{
+            validation="required|email" validation-visibility="dirty" :validation-messages="{
               required: 'Az email megadása kötelező!',
+              email: 'Érvénytelen email formátum.',
             }" />
 
           <FormKit type="password" name="password" label="Jelszó" placeholder="Add meg a jelszavadat ..."
@@ -50,7 +51,7 @@ async function submitForm(data) {
               required: 'A jelszó megadása kötelező!',
             }" />
 
-          <p v-if="loginError" class="mt-4 text-lg text-red-600 text-center font-medium">
+          <p v-if="loginError" class="text-md font-medium mt-3 text-red-600 text-center">
             {{ loginError }}
           </p>
 

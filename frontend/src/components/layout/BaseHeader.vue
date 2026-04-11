@@ -1,9 +1,14 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { useAuthStore } from '@/stores/AuthStore';
+import { useRouter } from 'vue-router';
 
 const isOpen = ref(false);
 const toggleMenu = () => isOpen.value = !isOpen.value;
 const closeMenu = () => isOpen.value = false;
+
+const router = useRouter();
+const AuthStore = useAuthStore();
 
 const showNav = ref(true);
 let lastScrollY = 0;
@@ -25,6 +30,14 @@ const handleScroll = () => {
 
 onMounted(() => window.addEventListener('scroll', handleScroll, { passive: true }));
 onBeforeUnmount(() => window.removeEventListener('scroll', handleScroll));
+
+const handleProfileClick = () => {
+  if (AuthStore.isAuthenticated) {
+    router.push('/profil');
+  } else {
+    router.push('/bejelentkezes');
+  }
+}
 </script>
 
 <template>
@@ -33,14 +46,14 @@ onBeforeUnmount(() => window.removeEventListener('scroll', handleScroll));
     :class="isOpen ? 'translate-y-0' : (showNav ? 'translate-y-0' : '-translate-y-full')">
     <div class="h-full flex items-center justify-between">
       <RouterLink to="/" class="flex items-center gap-3 -translate-x-2">
-        <img src="../../assets/img/dark-logo.svg" alt="logo" class="h-12 w-auto" />
+        <img src="@assets/img/dark-logo.svg" alt="logo" class="h-12 w-auto" />
         <span class="text-3xl font-bold text-text">
           FlowFinder
         </span>
       </RouterLink>
 
       <button class="max-[950px]:block hidden z-60 cursor-pointer" @click="toggleMenu">
-        <img src="../../assets/img/hamburger.svg" alt="menu" class="h-7" />
+        <img src="@assets/img/hamburger.svg" alt="menu" class="h-7" />
       </button>
 
       <ul class="flex items-center text-2xl gap-10 text-text-muted font-medium max-[950px]:hidden">
@@ -54,9 +67,9 @@ onBeforeUnmount(() => window.removeEventListener('scroll', handleScroll));
           <RouterLink to="/feltoltes" class="relative inline-block link-hover">Feltöltés</RouterLink>
         </li>
         <li>
-          <RouterLink to="/profil" class="relative inline-block">
-            <img src="../../assets/img/profile-icon.png" alt="profil" class="h-10 w-auto pt-1.5" />
-          </RouterLink>
+          <button @click="handleProfileClick" class="relative inline-block cursor-pointer">
+            <img src="@assets/img/profile-icon.png" alt="profil" class="h-10 w-auto pt-1.5" />
+          </button>
         </li>
       </ul>
     </div>
@@ -69,12 +82,12 @@ onBeforeUnmount(() => window.removeEventListener('scroll', handleScroll));
   <aside class="fixed top-0 right-0 h-full w-90 border-l border-text-muted bg-background shadow-lg
                transition-transform duration-300 z-60" :class="isOpen ? 'translate-x-0' : 'translate-x-full'">
     <div class="h-20 flex items-center justify-between px-5 border-b border-text-muted bg-background-light shadow-lg">
-      <RouterLink to="/profil" class="flex items-center gap-3">
-        <img src="../../assets/img/profile-icon.png" alt="profil" class="h-9 w-auto" />
-      </RouterLink>
+      <button @click="handleProfileClick" class="flex items-center gap-3 cursor-pointer">
+        <img src="@assets/img/profile-icon.png" alt="profil" class="h-9 w-auto" />
+      </button>
 
       <button @click="closeMenu" class="cursor-pointer">
-        <img src="../../assets/img/x.svg" alt="close" class="h-8" />
+        <img src="@assets/img/x-black.svg" alt="close" class="h-8" />
       </button>
     </div>
 

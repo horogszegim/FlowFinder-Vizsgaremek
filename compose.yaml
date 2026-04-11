@@ -8,7 +8,6 @@ volumes:
   shared_pnpm:
     external: true
 
-
 services:
   proxy:
     image: nginx:1.29.0-alpine3.22
@@ -28,16 +27,16 @@ services:
       - ./proxy/conf.d:/etc/nginx/conf.d:ro
 
   frontend:
-     image: idomi27/vue:26
-     build:
-       context: ./frontend
-       dockerfile: Dockerfile
-     volumes:
-       - ./frontend:/app:rw
-       - ./.env:/app/.env:ro
-       - shared_pnpm:/shared_pnpm
-     networks:
-       - fullstack
+    image: idomi27/vue:26
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./frontend:/app:rw
+      - ./.env:/app/.env:ro
+      - shared_pnpm:/shared_pnpm
+    networks:
+      - fullstack
 
   backend:
     image: rcsnjszg/backend2025
@@ -52,20 +51,19 @@ services:
     networks:
       - fullstack
     depends_on:
-     db:
-       condition: service_healthy
-  
+      db:
+        condition: service_healthy
+
   webserver:
     image: nginx:1.29.0-alpine3.22
     depends_on:
-     - backend
+      - backend
     networks:
-     - fullstack
+      - fullstack
     volumes:
-     - ./webserver/nginx.conf:/etc/nginx/nginx.conf:ro
-     - ./webserver/conf.d:/etc/nginx/conf.d:ro
-
-
+      - ./webserver/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./webserver/conf.d:/etc/nginx/conf.d:ro
+      - ./backend:/www:rw
 
   db:
     image: mysql:9.3.0
@@ -77,8 +75,8 @@ services:
       - TZ=${TZ}
     volumes:
       - mysql:/var/lib/mysql:rw
-#    ports:
-#      - 3306:3306
+    #    ports:
+    #      - 3306:3306
     networks:
       - fullstack
     healthcheck:
@@ -98,7 +96,7 @@ services:
       - UPLOAD_LIMIT=${PMA_UPLOAD_LIMIT}
     networks:
       - fullstack
-  
+
   docs:
     image: idomi27/docs:26
     volumes:
@@ -118,7 +116,7 @@ services:
       - VALIDATOR_URL=null
     networks:
       - fullstack
-  
+
   mailcatcher:
     image: dockage/mailcatcher:0.9.0
     networks:
