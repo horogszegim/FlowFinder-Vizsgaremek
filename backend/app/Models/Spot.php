@@ -31,4 +31,9 @@ class Spot extends Model
     {
         return $this->belongsToMany(SportsAndTag::class, 'spot_sports_and_tags', 'spot_id', 'sports_and_tag_id');
     }
+
+    public function savedByUsers()
+    {
+        return $this->belongsToMany(User::class, 'saved_spots');
+    }
 }

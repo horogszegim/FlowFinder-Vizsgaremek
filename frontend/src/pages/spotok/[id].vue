@@ -2,16 +2,21 @@
 import BaseLayout from '@layouts/BaseLayout.vue';
 import { useRoute } from 'vue-router';
 import { useSpotStore } from '@stores/SpotStore';
+import { useSavedSpotStore } from '@stores/SavedSpotStore';
+import { useAuthStore } from '@stores/AuthStore';
 import { ref, onMounted, computed } from 'vue';
 import { getTagStyle } from '@utils/tagColors';
 
 const route = useRoute();
 const spotStore = useSpotStore();
+const savedSpotStore = useSavedSpotStore();
+const authStore = useAuthStore();
 
 const spot = ref({});
 
 const bookmarked = ref(false);
 const showToast = ref(false);
+const toastError = ref(false);
 
 const galleryOpen = ref(false);
 const activeImage = ref(0);
@@ -23,17 +28,46 @@ const images = computed(() =>
 onMounted(async () => {
   spot.value = await spotStore.getSpot(route.params.id);
 
+  if (authStore.isAuthenticated) {
+    await savedSpotStore.getSavedSpots();
+    bookmarked.value = savedSpotStore.isSaved(spot.value.id);
+  }
+
   if (spot.value?.title) {
     document.title = `${spot.value.title} | ${import.meta.env.VITE_APP_NAME}`;
   }
 });
 
-function toggleBookmark() {
-  bookmarked.value = !bookmarked.value;
+async function toggleBookmark() {
+  if (!authStore.isAuthenticated) {
+    toastError.value = true;
+    showToast.value = true;
+    bookmarked.value = false;
+    setTimeout(() => showToast.value = false, 2500);
+    return;
+  }
+
+  try {
+    const spotId = spot.value.id;
+
+    if (!bookmarked.value) {
+      await savedSpotStore.saveSpot(spotId);
+      bookmarked.value = true;
+      toastError.value = false;
+    } else {
+      const id = savedSpotStore.findSavedSpotId(spotId);
+      if (id) {
+        await savedSpotStore.deleteSavedSpot(id);
+      }
+      bookmarked.value = false;
+      toastError.value = false;
+    }
+  } catch (e) {
+    toastError.value = true;
+  }
+
   showToast.value = true;
-  setTimeout(() => {
-    showToast.value = false;
-  }, 2500);
+  setTimeout(() => showToast.value = false, 2500);
 }
 
 function openGallery(index) {
@@ -160,8 +194,10 @@ function prevImage() {
     enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition duration-200 ease-in"
     leave-from-class="opacity-100" leave-to-class="opacity-0 -translate-y-4">
     <div v-if="showToast" class="fixed top-8 left-1/2 -translate-x-1/2 z-60">
-      <div class="bg-primary-dark text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2">
-        {{ bookmarked ? 'Spot sikeresen elmentve!' : 'Mentés eltávolítva!' }}
+      <div :class="toastError ? 'bg-red-700' : 'bg-primary-dark'"
+        class="text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2">
+        {{ toastError ? 'Sikertelen művelet, nem vagy bejelentkezve!' : (bookmarked ? 'Spot sikeresen elmentve!' :
+          'Mentés eltávolítva!') }}
       </div>
     </div>
   </transition>

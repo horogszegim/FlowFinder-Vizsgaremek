@@ -816,3 +816,260 @@ Funkciók:
 * lista megjelenítés
 
 ---
+
+# Spot mentési rendszer dokumentáció (Backend + Frontend)
+
+Ez a dokumentáció a spotok elmentésének (bookmark) rendszerét írja le:
+felhasználók által mentett spotok kezelése backend és frontend oldalon.
+
+---
+
+## Backend (Laravel)
+
+### Adatbázis migráció
+
+#### SavedSpots tábla
+
+Fájl: `backend/database/migrations/..._create_saved_spots_table.php`
+
+Mezők:
+
+* id
+* user_id
+
+  * foreign key → users.id
+  * cascadeOnDelete
+* spot_id
+
+  * foreign key → spots.id
+  * cascadeOnDelete
+
+Egyediség:
+
+* unique(user_id, spot_id)
+
+Megjegyzés:
+
+* Egy felhasználó egy spotot csak egyszer menthet el
+* A rekord törlődik, ha a user vagy a spot törlődik
+
+---
+
+### API route-ok
+
+Fájl: `backend/routes/api.php`
+
+* GET `/api/saved-spots`
+
+  * csak az aktuális user mentéseit adja vissza
+
+* POST `/api/saved-spots`
+
+  * új mentés létrehozása
+
+* GET `/api/saved-spots/{id}`
+
+  * egy mentett spot lekérése
+
+* DELETE `/api/saved-spots/{id}`
+
+  * mentés törlése
+
+Middleware:
+
+* `auth:sanctum`
+
+---
+
+### SavedSpot modell
+
+Fájl: `backend/app/Models/SavedSpot.php`
+
+fillable:
+
+* user_id
+* spot_id
+
+Kapcsolatok:
+
+* user()
+
+  * belongsTo User
+
+* spot()
+
+  * belongsTo Spot
+
+---
+
+### Resource
+
+#### SavedSpotResource
+
+Fájl: `backend/app/Http/Resources/SavedSpotResource.php`
+
+Visszatérési struktúra:
+
+{
+"id": 1,
+"user_id": 1,
+"spot_id": 5,
+"user": { ... },
+"spot": { ... }
+}
+
+---
+
+### Request validáció
+
+#### StoreSavedSpotRequest
+
+Fájl: `backend/app/Http/Requests/StoreSavedSpotRequest.php`
+
+Mezők:
+
+* spot_id
+
+  * required
+  * integer
+  * exists:spots,id
+
+Megjegyzés:
+
+* user_id nem jön a frontendről
+* a backend a bejelentkezett userből veszi
+
+---
+
+### Controller
+
+#### SavedSpotController
+
+Fájl: `backend/app/Http/Controllers/SavedSpotController.php`
+
+index(Request $request):
+
+* csak a bejelentkezett user mentéseit adja vissza
+
+store(StoreSavedSpotRequest $request):
+
+* user azonosítása `$request->user()` alapján
+* `firstOrCreate` használat az ismétlődések elkerülésére
+
+show(SavedSpot $savedSpot):
+
+* egy rekord lekérése kapcsolatokkal
+
+destroy(Request $request, SavedSpot $savedSpot):
+
+* csak a saját mentés törölhető
+* user_id ellenőrzés
+
+---
+
+## Frontend (Vue 3 + Pinia)
+
+### HTTP kliens
+
+Fájl: `frontend/src/utils/http.mjs`
+
+Kiegészítés:
+
+* Authorization header automatikus hozzáadása
+
+Authorization: Bearer <token>
+
+---
+
+### Store
+
+#### SavedSpotStore
+
+Fájl: `frontend/src/stores/SavedSpotStore.js`
+
+State:
+
+* savedSpots
+
+Metódusok:
+
+* getSavedSpots()
+
+  * GET `/saved-spots`
+  * user mentéseinek lekérése
+
+* isSaved(spotId)
+
+  * boolean visszatérés
+  * ellenőrzi, hogy a spot mentve van-e
+
+* saveSpot(spotId)
+
+  * POST `/saved-spots`
+  * új mentés létrehozása
+
+* deleteSavedSpot(id)
+
+  * DELETE `/saved-spots/{id}`
+  * mentés törlése
+
+* findSavedSpotId(spotId)
+
+  * visszaadja a mentés ID-ját adott spothoz
+
+---
+
+### Spot megjelenítő oldal
+
+Fájl: `frontend/src/pages/[id].vue`
+
+Funkciók:
+
+* spot betöltés
+* mentések lekérése bejelentkezett user esetén
+* bookmark állapot inicializálása
+
+Bookmark logika:
+
+* Ha nincs bejelentkezve:
+
+  * piros toast jelenik meg
+  * nincs állapotváltozás
+
+* Ha nincs mentve:
+
+  * POST request
+  * bookmark aktiválódik
+
+* Ha már mentve van:
+
+  * DELETE request
+  * bookmark deaktiválódik
+
+Hiba kezelés:
+
+* try/catch blokk
+* toastError flag használata
+
+---
+
+### UI viselkedés
+
+* üres bookmark ikon → nincs mentve
+* kitöltött bookmark ikon → mentve van
+* toast visszajelzés minden művelet után
+
+---
+
+## Adatfolyam
+
+1. Felhasználó rányom a bookmark gombra
+2. Frontend ellenőrzi az auth állapotot
+3. API request indul
+4. Backend azonosítja a usert token alapján
+5. Adatbázis művelet történik
+6. Resource visszatér
+7. Store frissül
+8. UI állapot frissül
+
+---
