@@ -1073,3 +1073,217 @@ Hiba kezelés:
 8. UI állapot frissül
 
 ---
+
+## API middleware-ek és spot feltöltés
+
+---
+
+## Backend – API middleware-ek
+
+### Áttekintés
+
+Az API végpontok két csoportra lettek bontva:
+
+* publikus végpontok
+* védett végpontok (`auth:sanctum` middleware)
+
+Cél:
+
+* nem bejelentkezett user is tudjon böngészni
+* létrehozás / törlés csak autentikált usernek legyen elérhető
+
+---
+
+### Route struktúra
+
+Fájl: `backend/routes/api.php`
+
+Publikus:
+
+* GET `/api/spots`
+* GET `/api/spots/{id}`
+* GET `/api/sports-and-tags`
+* GET `/api/sports-and-tags/{id}`
+* GET `/api/images`
+* GET `/api/images/{id}`
+* GET `/api/users`
+* GET `/api/users/{id}`
+
+Védett (`auth:sanctum`):
+
+* POST `/api/spots`
+* DELETE `/api/spots/{id}`
+* POST `/api/images`
+* DELETE `/api/images/{id}`
+* `/api/saved-spots` összes route
+
+---
+
+### Működés
+
+* A frontend minden kéréshez hozzáadja a Bearer tokent (ha van)
+* A Sanctum middleware ellenőrzi a tokent
+* Ha nincs token:
+
+  * a kérés 401-el elutasításra kerül
+* Ha van token:
+
+  * `$request->user()` és `Auth::id()` elérhető
+
+---
+
+### Spot létrehozás (fontos változás)
+
+A `created_by` mező:
+
+* már nem jön frontendről
+* backend állítja be:
+
+```php
+$data['created_by'] = Auth::id();
+```
+
+Előny:
+
+* nem manipulálható kliens oldalról
+* biztonságosabb
+
+---
+
+## Frontend – Spot feltöltés oldal
+
+Fájl: `frontend/src/pages/feltoltes.vue`
+
+---
+
+### Jogosultság kezelés
+
+Oldal betöltéskor:
+
+* ha nincs bejelentkezve:
+
+  * redirect `/bejelentkezes`
+  * toast üzenet: „Spot feltöltéshez be kell jelentkezned!”
+
+---
+
+### Használt store-ok
+
+* `AuthStore`
+
+  * auth állapot
+
+* `SportsAndTagStore`
+
+  * tagek lekérése
+
+* `SpotStore`
+
+  * spot létrehozás
+
+* `ImageStore`
+
+  * képfeltöltés
+
+---
+
+### Adatfolyam (feltöltés)
+
+1. FormKit form submit
+2. frontend validációk lefutnak
+3. `spotStore.createSpot()` hívás
+4. spot ID visszatér
+5. képek feltöltése `imageStore.uploadImage()`
+6. redirect `/spotok/{id}`
+
+---
+
+### Képfeltöltés rendszer
+
+Funkciók:
+
+* drag & drop
+* több kép feltöltés
+* preview
+* sorrend módosítás (bal / jobb nyíl)
+* törlés
+
+Limit:
+
+* max 10 kép
+* max 3MB / kép
+* csak JPG / PNG
+
+Viselkedés:
+
+* ha elérte a limitet:
+
+  * feltöltő mező eltűnik
+  * üzenet jelenik meg:
+
+    „Elérted a maximum képszámot. Törölj egy képet, hogy újat tölthess fel!”
+
+---
+
+### Tag kiválasztás UX
+
+* színes tagek (chip-ek)
+* kattintással toggle
+* nincs Ctrl/Cmd szükség
+
+Limit:
+
+* max 5 tag
+
+Hiba:
+
+* ideiglenes (2.5s) hibaüzenet jelenik meg
+
+---
+
+### Validációk
+
+Frontend:
+
+* cím: max 60 karakter
+* latitude / longitude:
+
+  * max 25 karakter
+  * csak szám és pont (`^[0-9.]+$`)
+
+Backend:
+
+* ugyanez enforced `StoreSpotRequest`-ben
+
+---
+
+### Hiba kezelés
+
+Típusok:
+
+* imageError
+
+  * képfeltöltési hibák
+
+* tagError
+
+  * tag limit
+
+* errorMessage
+
+  * backend hibák
+
+Viselkedés:
+
+* field közeli hibák
+* ideiglenes toast jellegű üzenetek
+
+---
+
+### UI viselkedés
+
+* gombok hover animációval
+* preview kártyák overlay action gombokkal
+* smooth transition-ök
+
+---

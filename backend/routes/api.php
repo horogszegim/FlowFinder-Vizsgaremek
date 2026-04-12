@@ -19,10 +19,12 @@ Route::post('/login', [AuthController::class, 'authenticate']);
 
 Route::apiResource('/users', UserController::class)->only(['index', 'show']);
 
-Route::apiResource('/spots', SpotController::class)->except(['update']);
-Route::apiResource('/images', ImageController::class)->except(['update']);
+Route::apiResource('/spots', SpotController::class)->only(['index', 'show']);
+Route::apiResource('/images', ImageController::class)->only(['index', 'show']);
 Route::apiResource('/sports-and-tags', SportsAndTagController::class)->only(['index', 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('/spots', SpotController::class)->only(['store', 'destroy']);
+    Route::apiResource('/images', ImageController::class)->only(['store', 'destroy']);
     Route::apiResource('/saved-spots', SavedSpotController::class)->except(['update']);
 });

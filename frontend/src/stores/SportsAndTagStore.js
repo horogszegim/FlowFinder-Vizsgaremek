@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { api } from '@utils/http.mjs';
 import { ref } from 'vue';
 
-export const useSpotStore = defineStore('sportsAndTag', () => {
+export const useSportsAndTagStore = defineStore('sportsAndTag', () => {
     const sportsAndTags = ref([]);
 
     async function getSportsAndTags() {

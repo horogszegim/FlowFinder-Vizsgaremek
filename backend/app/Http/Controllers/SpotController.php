@@ -6,6 +6,7 @@ use App\Http\Requests\StoreSpotRequest;
 use App\Http\Resources\SpotResource;
 use App\Models\Spot;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 class SpotController extends Controller
 {
@@ -19,6 +20,8 @@ class SpotController extends Controller
     public function store(StoreSpotRequest $request)
     {
         $data = $request->validated();
+
+        $data['created_by'] = Auth::id();
 
         $spot = Spot::create($data);
 

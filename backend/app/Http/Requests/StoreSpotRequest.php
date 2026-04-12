@@ -11,9 +11,8 @@ class StoreSpotRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:60'],
             'description' => ['required', 'string'],
-            'latitude' => ['required', 'string', 'max:25'],
-            'longitude' => ['required', 'string', 'max:25'],
-            'created_by' => ['required', 'exists:users,id'],
+            'latitude' => ['required', 'regex:/^[0-9.]+$/', 'max:25'],
+            'longitude' => ['required', 'regex:/^[0-9.]+$/', 'max:25'],
             'sports_and_tags' => ['array'],
             'sports_and_tags.*' => ['exists:sports_and_tags,id'],
         ];

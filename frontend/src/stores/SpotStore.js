@@ -17,7 +17,9 @@ export const useSpotStore = defineStore('spot', () => {
 
     async function createSpot(spot) {
         const response = await api.post('spots', spot);
-        spots.value.push(response.data.data);
+        const created = response.data.data;
+        spots.value.push(created);
+        return created;
     }
 
     async function deleteSpot(id) {
