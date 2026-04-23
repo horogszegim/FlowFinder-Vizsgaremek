@@ -1,14 +1,9 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
-import { useAuthStore } from '@/stores/AuthStore';
-import { useRouter } from 'vue-router';
 
 const isOpen = ref(false);
 const toggleMenu = () => isOpen.value = !isOpen.value;
 const closeMenu = () => isOpen.value = false;
-
-const router = useRouter();
-const AuthStore = useAuthStore();
 
 const showNav = ref(true);
 let lastScrollY = 0;
@@ -30,14 +25,6 @@ const handleScroll = () => {
 
 onMounted(() => window.addEventListener('scroll', handleScroll, { passive: true }));
 onBeforeUnmount(() => window.removeEventListener('scroll', handleScroll));
-
-const handleProfileClick = () => {
-  if (AuthStore.isAuthenticated) {
-    router.push('/profil');
-  } else {
-    router.push('/bejelentkezes');
-  }
-}
 </script>
 
 <template>
@@ -67,9 +54,9 @@ const handleProfileClick = () => {
           <RouterLink to="/feltoltes" class="relative inline-block link-hover">Feltöltés</RouterLink>
         </li>
         <li>
-          <button @click="handleProfileClick" class="relative inline-block cursor-pointer">
+          <RouterLink to="/profil" class="relative inline-block cursor-pointer">
             <img src="@assets/img/profile-icon.png" alt="profil" class="h-10 w-auto pt-1.5" />
-          </button>
+          </RouterLink>
         </li>
       </ul>
     </div>
@@ -82,9 +69,9 @@ const handleProfileClick = () => {
   <aside class="fixed top-0 right-0 h-full w-90 border-l border-text-muted bg-background shadow-lg
                transition-transform duration-300 z-60" :class="isOpen ? 'translate-x-0' : 'translate-x-full'">
     <div class="h-20 flex items-center justify-between px-5 border-b border-text-muted bg-background-light shadow-lg">
-      <button @click="handleProfileClick" class="flex items-center gap-3 cursor-pointer">
+      <RouterLink to="/profil" class="flex items-center gap-3">
         <img src="@assets/img/profile-icon.png" alt="profil" class="h-9 w-auto" />
-      </button>
+      </RouterLink>
 
       <button @click="closeMenu" class="cursor-pointer">
         <img src="@assets/img/x-black.svg" alt="close" class="h-8" />

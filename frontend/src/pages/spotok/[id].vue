@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { useSpotStore } from '@stores/SpotStore';
 import { useSavedSpotStore } from '@stores/SavedSpotStore';
 import { useAuthStore } from '@stores/AuthStore';
+import { useToastStore } from '@/stores/ToastStore';
 import { ref, onMounted, computed } from 'vue';
 import { getTagStyle } from '@utils/tagColors';
 
@@ -11,12 +12,11 @@ const route = useRoute();
 const spotStore = useSpotStore();
 const savedSpotStore = useSavedSpotStore();
 const authStore = useAuthStore();
+const toast = useToastStore();
 
 const spot = ref({});
 
 const bookmarked = ref(false);
-const showToast = ref(false);
-const toastError = ref(false);
 
 const galleryOpen = ref(false);
 const activeImage = ref(0);
@@ -40,10 +40,7 @@ onMounted(async () => {
 
 async function toggleBookmark() {
   if (!authStore.isAuthenticated) {
-    toastError.value = true;
-    showToast.value = true;
-    bookmarked.value = false;
-    setTimeout(() => showToast.value = false, 2500);
+    toast.trigger('Spot mentéséhez be kell jelentkezned!', 'error');
     return;
   }
 
@@ -53,21 +50,18 @@ async function toggleBookmark() {
     if (!bookmarked.value) {
       await savedSpotStore.saveSpot(spotId);
       bookmarked.value = true;
-      toastError.value = false;
+      toast.trigger('Spot sikeresen elmentve!');
     } else {
       const id = savedSpotStore.findSavedSpotId(spotId);
       if (id) {
         await savedSpotStore.deleteSavedSpot(id);
       }
       bookmarked.value = false;
-      toastError.value = false;
+      toast.trigger('Mentés eltávolítva!');
     }
   } catch (e) {
-    toastError.value = true;
+    toast.trigger('Hiba történt!', 'error');
   }
-
-  showToast.value = true;
-  setTimeout(() => showToast.value = false, 2500);
 }
 
 function openGallery(index) {
@@ -189,18 +183,6 @@ function prevImage() {
 
     </div>
   </BaseLayout>
-
-  <transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 -translate-y-5 scale-90"
-    enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition duration-200 ease-in"
-    leave-from-class="opacity-100" leave-to-class="opacity-0 -translate-y-4">
-    <div v-if="showToast" class="fixed top-8 left-1/2 -translate-x-1/2 z-60">
-      <div :class="toastError ? 'bg-red-700' : 'bg-primary-dark'"
-        class="text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2">
-        {{ toastError ? 'Sikertelen művelet, nem vagy bejelentkezve!' : (bookmarked ? 'Spot sikeresen elmentve!' :
-          'Mentés eltávolítva!') }}
-      </div>
-    </div>
-  </transition>
 
   <transition enter-active-class="transition duration-300" enter-from-class="opacity-0" enter-to-class="opacity-100"
     leave-active-class="transition duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">

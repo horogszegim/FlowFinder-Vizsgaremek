@@ -1287,3 +1287,371 @@ Viselkedés:
 * smooth transition-ök
 
 ---
+
+# Kezdőlap, globális auth guard és toast rendszer dokumentáció (Frontend)
+
+Ez a dokumentáció a kezdőlap teljes elkészítését, a route szintű jogosultságkezelést, valamint az egész alkalmazásban használható globális toast visszajelző rendszert írja le.
+
+---
+
+## Kezdőlap (index.vue)
+
+Fájl: `frontend/src/pages/index.vue`
+
+### Áttekintés
+
+A kezdőlap a projekt nyitóoldala, amely bemutatja:
+
+* a FlowFinder célját
+* a projekt hátterét
+* a fejlesztőcsapatot
+* a jelenlegi funkciókat
+* a regisztrációhoz kötött lehetőségeket
+
+---
+
+### Layout felépítés
+
+Használt wrapper:
+
+* `BaseLayout`
+
+Fő szekciók:
+
+* Hero blokk logóval és CTA gombokkal
+* Projekt bemutatása
+* Miért készült a rendszer
+* Rólunk blokk
+* Funkciólista
+* Fiókhoz kötött funkciók ismertetése
+
+---
+
+### Navigációs elemek
+
+RouterLink használatban:
+
+* `/spotkereso`
+* `/feltoltes`
+* `/profil`
+* `/regisztracio`
+* `/bejelentkezes`
+
+---
+
+### Meta adatok
+
+Route meta:
+
+* name: `kezdolap`
+* title: `FlowFinder`
+
+---
+
+### UI célok
+
+* modern landing page megjelenés
+* reszponzív kialakítás
+* egyértelmű call-to-action gombok
+* projekt bemutatása külsős látogatóknak is
+
+---
+
+## Globális Auth Guard rendszer
+
+### Fájl
+
+`frontend/src/router/guards/AuthGuard.js`
+
+---
+
+### Áttekintés
+
+A guard központilag kezeli:
+
+* belépéshez kötött oldalak védelmét
+* vendég-only oldalak kezelését
+* automatikus átirányításokat
+* toast visszajelzéseket
+
+---
+
+### Használt store-ok
+
+* `AuthStore`
+* `ToastStore`
+
+---
+
+### Működés
+
+#### Ha az oldal `requiresAuth: true`
+
+És nincs bejelentkezve a felhasználó:
+
+* toast üzenet jelenik meg
+* redirect `/bejelentkezes`
+
+Üzenet:
+
+`Ehhez először be kell jelentkezned!`
+
+---
+
+#### Ha az oldal `guestOnly: true`
+
+És a user már be van jelentkezve:
+
+* toast üzenet jelenik meg
+* redirect `/profil`
+
+Üzenet:
+
+`Már be vagy jelentkezve!`
+
+---
+
+#### Egyéb esetben
+
+* navigáció engedélyezett
+
+---
+
+## Router bekötés
+
+Fájl: `frontend/src/router/index.js`
+
+### Új beforeEach guardok
+
+* `authGuard`
+* `setTitle`
+
+Sorrend:
+
+1. authGuard
+2. setTitle
+
+---
+
+### Előnyök
+
+* minden route egy helyen kezelhető
+* nincs szükség oldalszintű auth ellenőrzésekre
+* egységes UX működés
+
+---
+
+## Route meta használat
+
+### Védett oldalak
+
+Példák:
+
+* `feltoltes.vue`
+* `profil.vue`
+
+Meta:
+
+* `requiresAuth: true`
+
+---
+
+### Vendég-only oldalak
+
+Példák:
+
+* `bejelentkezes.vue`
+* `regisztracio.vue`
+
+Meta:
+
+* `guestOnly: true`
+
+---
+
+## Globális Toast rendszer
+
+### Store
+
+Fájl: `frontend/src/stores/ToastStore.js`
+
+---
+
+### State
+
+* `show`
+* `message`
+* `type`
+
+---
+
+### Típusok
+
+* success
+* error
+
+---
+
+### Metódus
+
+#### trigger(message, type)
+
+Feladata:
+
+* üzenet beállítása
+* toast megjelenítése
+* automatikus eltüntetés 3 másodperc után
+
+---
+
+## Megjelenítő komponens
+
+### Fájl
+
+`frontend/src/components/GlobalToast.vue`
+
+---
+
+### Működés
+
+A komponens figyeli a `ToastStore` állapotát.
+
+Ha `show = true`:
+
+* fix pozícióban megjelenik felül középen
+* animációval érkezik
+* automatikusan eltűnik
+
+---
+
+### Színezés
+
+* success → elsődleges szín
+* error → piros háttér
+
+---
+
+### Animáció
+
+Vue transition használatban:
+
+* belépéskor fade + slide
+* kilépéskor fade
+
+---
+
+## Globális bekötés Layout szinten
+
+### Fájl
+
+`frontend/src/layouts/BaseLayout.vue`
+
+---
+
+### Új komponens
+
+* `GlobalToast`
+
+Elhelyezés:
+
+* BaseHeader alatt
+* BaseFooter fölött
+* teljes alkalmazásból elérhető
+
+---
+
+### Előny
+
+Minden oldal külön import nélkül használhat toast üzenetet store-on keresztül.
+
+---
+
+## Oldalak frissítése toast rendszerre
+
+### Bejelentkezés oldal
+
+Fájl: `frontend/src/pages/bejelentkezes.vue`
+
+Siker esetén:
+
+* toast: `Sikeres bejelentkezés!`
+* redirect `/`
+
+---
+
+### Regisztráció oldal
+
+Fájl: `frontend/src/pages/regisztracio.vue`
+
+Siker esetén:
+
+* toast: `Sikeres regisztráció!`
+* redirect `/`
+
+---
+
+### Spot megjelenítő oldal
+
+Fájl: `frontend/src/pages/[id].vue`
+
+Mentéskor:
+
+* `Spot sikeresen elmentve!`
+
+Törléskor:
+
+* `Mentés eltávolítva!`
+
+Auth nélkül bookmark esetén:
+
+* `Spot mentéséhez be kell jelentkezned!`
+
+Általános hiba:
+
+* `Hiba történt!`
+
+---
+
+## Spot megjelenítő oldal fejlesztések
+
+Fájl: `frontend/src/pages/[id].vue`
+
+### Új funkciók
+
+* globális toast használat
+* bookmark kezelés finomítása
+
+## Feltöltés oldal route védelem
+
+Fájl: `frontend/src/pages/feltoltes.vue`
+
+Meta:
+
+* `requiresAuth: true`
+
+Így a guard automatikusan védi az oldalt.
+
+---
+
+## Profil oldal route védelem
+
+Fájl: `frontend/src/pages/profil.vue`
+
+Meta:
+
+* `requiresAuth: true`
+
+---
+
+## Bejelentkezés és Regisztráció oldal védelem
+
+Meta:
+
+* `guestOnly: true`
+
+Ha a user már belépett:
+
+* nem nyithatja meg ezeket az oldalakat
+* automatikusan profil oldalra kerül
+
+---

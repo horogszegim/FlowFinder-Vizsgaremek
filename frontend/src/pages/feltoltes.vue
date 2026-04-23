@@ -30,12 +30,6 @@ const uploading = ref(false);
 const dragActive = ref(false);
 
 onMounted(async () => {
-    if (!authStore.isAuthenticated) {
-        localStorage.setItem('loginRedirectToast', '1');
-        router.push('/bejelentkezes');
-        return;
-    }
-
     await sportsAndTagStore.getSportsAndTags();
     tags.value = sportsAndTagStore.sportsAndTags;
 });
@@ -320,4 +314,5 @@ async function submitForm(data) {
 name: feltoltes
 meta:
   title: Spot feltöltés
+  requiresAuth: true
 </route>

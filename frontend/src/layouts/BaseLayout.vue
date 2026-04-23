@@ -1,6 +1,7 @@
 <script setup>
 import BaseHeader from '@components/layout/BaseHeader.vue';
 import BaseFooter from '@components/layout/BaseFooter.vue';
+import GlobalToast from '@/components/GlobalToast.vue';
 </script>
 
 <template>
@@ -12,5 +13,7 @@ import BaseFooter from '@components/layout/BaseFooter.vue';
     </main>
 
     <BaseFooter />
+
+    <GlobalToast />
   </div>
 </template>

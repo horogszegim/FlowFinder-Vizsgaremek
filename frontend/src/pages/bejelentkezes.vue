@@ -2,42 +2,33 @@
 import BaseLayout from '@layouts/BaseLayout.vue';
 import { useAuthStore } from '@/stores/AuthStore.js';
 import { useRouter } from 'vue-router';
-import { ref, onBeforeMount } from 'vue';
+import { ref } from 'vue';
+import { useToastStore } from '@/stores/ToastStore';
 
 const auth = useAuthStore();
 const router = useRouter();
+const toast = useToastStore();
 
 const loginError = ref('');
-const showToast = ref(false);
 
 async function submitForm(data) {
   loginError.value = '';
 
   try {
     await auth.login(data);
+    toast.trigger('Sikeres bejelentkezés!');
     router.push('/');
   } catch (error) {
     loginError.value = 'Hibás email cím vagy jelszó, kérlek próbáld újra!';
   }
 }
-
-onBeforeMount(() => {
-  if (localStorage.getItem('loginRedirectToast')) {
-    showToast.value = true;
-    localStorage.removeItem('loginRedirectToast');
-
-    setTimeout(() => {
-      showToast.value = false;
-    }, 2500);
-  }
-});
 </script>
 
 <template>
   <BaseLayout>
     <div class="w-full flex justify-center items-center my-10 -translate-y-3">
       <div class="w-full max-w-2xl">
-        <div class="flex items-center justify-center gap-3 -translate-x-2 mb-15">
+        <div class="flex items-center justify-center gap-3 -translate-x-1 mb-15">
           <img src="@assets/img/dark-logo.svg" alt="logo" class="h-16 w-auto" />
           <span class="text-5xl font-bold text-text">
             FlowFinder
@@ -86,20 +77,11 @@ onBeforeMount(() => {
       </div>
     </div>
   </BaseLayout>
-
-  <transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 -translate-y-5 scale-90"
-    enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition duration-200 ease-in"
-    leave-from-class="opacity-100" leave-to-class="opacity-0 -translate-y-4">
-    <div v-if="showToast" class="fixed top-8 left-1/2 -translate-x-1/2 z-60">
-      <div class="bg-red-700 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2">
-        Spot feltöltéshez be kell jelentkezned!
-      </div>
-    </div>
-  </transition>
 </template>
 
 <route lang="yaml">
 name: bejelentkezes
 meta:
   title: Bejelentkezés
+  guestOnly: true
 </route>

@@ -1,27 +1,31 @@
 <script setup>
 import BaseLayout from '@layouts/BaseLayout.vue';
 import { useAuthStore } from '@/stores/AuthStore.js';
-import { ref } from 'vue'
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useToastStore } from '@/stores/ToastStore';
 
 const auth = useAuthStore();
 const router = useRouter();
-const errorMessage = ref(null)
+const errorMessage = ref(null);
+
+const toast = useToastStore();
 
 async function submitForm(data) {
-    errorMessage.value = null
+    errorMessage.value = null;
 
     try {
-        await auth.register(data)
-        router.push('/')
+        await auth.register(data);
+        toast.trigger('Sikeres regisztráció!');
+        router.push('/');
     } catch (error) {
         if (error.response && error.response.status === 422) {
-            const errors = error.response.data.errors
+            const errors = error.response.data.errors;
 
             if (errors.username) {
-                errorMessage.value = 'A megadott felhasználónév már foglalt!'
+                errorMessage.value = 'A megadott felhasználónév már foglalt!';
             } else if (errors.email) {
-                errorMessage.value = 'A megadott email cím már regisztrálva van!'
+                errorMessage.value = 'A megadott email cím már regisztrálva van!';
             }
         }
     }
@@ -102,7 +106,7 @@ function passwordMatch(node) {
     <BaseLayout>
         <div class="w-full flex justify-center items-center my-10 -translate-y-3">
             <div class="w-full max-w-2xl">
-                <div class="flex items-center justify-center gap-3 -translate-x-2 mb-15">
+                <div class="flex items-center justify-center gap-3 -translate-x-1 mb-15">
                     <img src="@assets/img/dark-logo.svg" alt="logo" class="h-16 w-auto" />
                     <span class="text-5xl font-bold text-text">FlowFinder</span>
                 </div>
@@ -183,4 +187,5 @@ function passwordMatch(node) {
 name: regisztracio
 meta:
   title: Regisztráció
+  guestOnly: true
 </route>
