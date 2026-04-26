@@ -1655,3 +1655,435 @@ Ha a user már belépett:
 * automatikusan profil oldalra kerül
 
 ---
+
+# Spotkereső rendszer dokumentáció (Frontend + Backend seed frissítések)
+
+Ez a dokumentáció a teljes spotkereső oldal elkészítését, az új spot lista komponens bevezetését, a frontend oldali szűrési és lapozási rendszert, valamint a nagyobb teszt adathalmazhoz igazított backend seeder frissítéseket írja le.
+
+---
+
+## Frontend – Spotkereső oldal
+
+### Fájl
+
+`frontend/src/pages/spotkereso.vue`
+
+---
+
+### Áttekintés
+
+A spotkereső oldal célja, hogy a felhasználó gyorsan és kényelmesen böngésszen az összes feltöltött spot között.
+
+Fő funkciók:
+
+* szöveges keresés
+* tag alapú szűrés
+* kombinált szűrés
+* lapozás
+* loading állapot
+* reszponzív lista megjelenítés
+* gördülékeny UX működés nagy adatmennyiség mellett is
+
+---
+
+### Route meta
+
+Meta adatok:
+
+* name: `spotkereso`
+* title: `Spotkereső`
+
+---
+
+### Használt store-ok
+
+* `SpotStore`
+* `SportsAndTagStore`
+
+---
+
+### Betöltési folyamat
+
+Oldal mountoláskor:
+
+* `spotStore.getSpots()`
+* `sportsAndTagStore.getSportsAndTags()`
+
+Ennek eredménye:
+
+* spot lista betöltése
+* tag lista betöltése
+
+---
+
+### Keresőmező
+
+A felső kereső input szabad szavas keresést biztosít.
+
+Keresési mezők:
+
+* spot cím
+* spot leírás
+* feltöltő felhasználónév
+* tagek neve
+
+Működés:
+
+* kis- és nagybetű független
+* trimelt input
+* azonnali szűrés gépelés közben
+
+---
+
+### Tag alapú szűrés
+
+A tagek vízszintesen görgethető chip rendszerben jelennek meg.
+
+Tulajdonságok:
+
+* több tag egyszerre kiválasztható
+* kattintással ki- és bekapcsolható
+* aktív tag vizuálisan kiemelt állapotot kap
+
+Szűrés logika:
+
+* ha nincs kiválasztott tag, minden spot látható
+* ha van kiválasztott tag, elég egy egyezés a megjelenéshez
+
+---
+
+### Tag görgető UX
+
+A tag lista:
+
+* egérgörgővel oldalirányban is görgethető
+* bal / jobb nyíl gombokkal mozgatható
+* mobilon natív touch scroll működik
+
+---
+
+### Kombinált szűrés
+
+A szöveges keresés és tag szűrés egyszerre működik.
+
+Példa:
+
+* keresés: `budapest`
+* kiválasztott tag: `BMX`
+
+Ekkor csak azok a spotok jelennek meg, amelyek mindkét feltételnek megfelelnek.
+
+---
+
+### Loading állapot
+
+Amíg a spotok töltődnek:
+
+* spinner jelenik meg
+* "Spotok betöltése ..." szöveg látható
+
+A loading állapot a store-ból érkezik.
+
+---
+
+### Üres találat állapot
+
+Ha nincs egyező spot:
+
+* középre igazított hibaüzenet jelenik meg
+
+Szöveg:
+
+`Nincs találat a keresésre!`
+
+---
+
+### Lapozás
+
+Oldalanként megjelenített elemszám:
+
+* 100 spot / oldal
+
+Funkciók:
+
+* előző oldal
+* következő oldal
+* közeli oldalszámok megjelenítése
+* aktív oldal kiemelése
+
+UX:
+
+* lapváltáskor automatikus visszagörgetés oldal tetejére
+
+---
+
+### További találatok kijelzése
+
+Aktív szűrés esetén a rendszer mutatja, hogy hány további találat érhető még el a következő oldalakon.
+
+Példa:
+
+`35 további találat ...`
+
+---
+
+### Reszponzív viselkedés
+
+Az oldal mobilon, tableten és desktopon optimalizált.
+
+Főbb elemek:
+
+* rugalmas spot lista
+* tördelődő lapozó gombok
+* görgethető tag sáv
+* megfelelő térközök kisebb kijelzőn is
+
+---
+
+## Frontend – Spot lista elem komponens
+
+### Fájl
+
+`frontend/src/components/BaseSpotBlock.vue`
+
+---
+
+### Áttekintés
+
+Újrafelhasználható komponens egyetlen spot listaelem megjelenítésére.
+
+Felhasználás:
+
+* spotkereső lista
+
+---
+
+### Megjelenített adatok
+
+* első kép
+* spot cím
+* feltöltő neve
+* tagek
+* rövidített leírás
+
+---
+
+### Képkezelés
+
+A komponens az első elérhető spot képet jeleníti meg.
+
+Ha nincs kép:
+
+* placeholder kép töltődik be
+
+---
+
+### Navigáció
+
+A teljes blokk kattintható.
+
+Kattintáskor:
+
+* redirect `/spotok/{id}`
+
+---
+
+### Szövegkezelés
+
+Nagy vagy szabálytalan tartalom esetén is stabil marad a layout.
+
+Megoldások:
+
+* hosszú cím levágása
+* több soros leírás clamp
+* túlcsordulás tiltása
+* mobil kompatibilis tördelés
+
+---
+
+### Reszponzív felépítés
+
+Mobilon:
+
+* egymás alatti kép + tartalom
+
+Desktopon:
+
+* oldalsó képes kártya nézet
+
+---
+
+## Frontend – SpotStore frissítés
+
+### Fájl
+
+`frontend/src/stores/SpotStore.js`
+
+---
+
+### Új state
+
+* `loading`
+
+Feladata:
+
+* spot lista kérés állapotának követése
+
+---
+
+### getSpots() módosítás
+
+Lekérés előtt:
+
+* `loading = true`
+
+Lekérés után:
+
+* `loading = false`
+
+Ez biztosítja a keresőoldal loading spinner működését.
+
+---
+
+## Frontend – Spot megjelenítő oldal finomítások
+
+### Fájl
+
+`frontend/src/pages/[id].vue`
+
+---
+
+### Reszponzív szövegkezelés
+
+A cím, feltöltő név és leírás frissítve lett extrém hosszú vagy szándékosan problémás tartalom kezelésére.
+
+Cél:
+
+* ne csússzon szét az oldal
+* ne lógjon ki szöveg
+* mobilon is olvasható maradjon
+
+Használt megoldások:
+
+* `overflow-wrap:anywhere`
+* automatikus sortörés
+* hyphenation támogatás
+* rugalmas flex layout
+
+---
+
+### Eredmény
+
+Akár troll jellegű tartalom esetén is stabil marad az oldal megjelenése.
+
+---
+
+## Backend – Seeder rendszer frissítés
+
+### Cél
+
+Nagyobb adathalmaz melletti működés tesztelése.
+
+Fő területek:
+
+* frontend lista teljesítmény
+* keresés
+* lapozás
+* eager loading
+* képgaléria működés
+* adatbázis terhelés
+
+---
+
+## SpotSeeder frissítés
+
+### Fájl
+
+`backend/database/seeders/SpotSeeder.php`
+
+---
+
+### Régi működés
+
+* 10 teszt spot
+
+### Új működés
+
+* 1000 spot generálása
+
+Tulajdonságok:
+
+* változó hosszúságú címek
+* változó hosszúságú leírások
+* random user tulajdonos
+* random magyarországi koordináták
+
+---
+
+### Cím generálás
+
+A cím elején sorszám szerepel.
+
+Példa:
+
+`153. RandomTitle`
+
+A cím továbbra is maximum 60 karakteres.
+
+---
+
+## ImageSeeder frissítés
+
+### Fájl
+
+`backend/database/seeders/ImageSeeder.php`
+
+---
+
+### Régi működés
+
+* csak 10 spothoz generált képeket
+
+### Új működés
+
+* mind az 1000 spothoz készül kép
+
+Spotonként:
+
+* minimum 1 kép
+* maximum 10 kép
+
+A képek random seed fájlokból kerülnek kiválasztásra.
+
+---
+
+## SpotSportsAndTagSeeder frissítés
+
+### Fájl
+
+`backend/database/seeders/SpotSportsAndTagSeeder.php`
+
+---
+
+### Új működés
+
+Mindegyik spothoz véletlenszerűen kerül:
+
+* 0 - 5 darab tag
+
+A rendszer akkor is lefut, ha egyetlen tag sem kerül hozzárendelésre.
+
+---
+
+## Tesztelési előnyök
+
+Az új seed adathalmaz alkalmas:
+
+* több száz elemes lista render tesztre
+* frontend keresési teljesítmény mérésre
+* lapozási UX ellenőrzésre
+* képes spotok tömeges tesztelésére
+* reszponzív viselkedés ellenőrzésére
+* backend lekérdezések valósabb terhelésére
+
+---

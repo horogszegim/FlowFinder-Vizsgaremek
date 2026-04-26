@@ -15,10 +15,6 @@ class SpotSportsAndTagSeeder extends Seeder
         foreach (Spot::all() as $spot) {
             $randomCount = rand(0, 5);
 
-            if ($randomCount === 0) {
-                continue;
-            }
-
             $randomTags = collect($tagIds)
                 ->shuffle()
                 ->take($randomCount)

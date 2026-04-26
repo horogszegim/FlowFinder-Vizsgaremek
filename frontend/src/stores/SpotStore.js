@@ -4,10 +4,17 @@ import { ref } from 'vue';
 
 export const useSpotStore = defineStore('spot', () => {
     const spots = ref([]);
+    const loading = ref(false);
 
     async function getSpots() {
-        const response = await api.get('spots');
-        spots.value = response.data.data;
+        loading.value = true;
+
+        try {
+            const response = await api.get('spots');
+            spots.value = response.data.data;
+        } finally {
+            loading.value = false;
+        }
     }
 
     async function getSpot(id) {
@@ -25,6 +32,7 @@ export const useSpotStore = defineStore('spot', () => {
     async function deleteSpot(id) {
         await api.delete(`spots/${id}`);
         const index = spots.value.findIndex(s => s.id === id);
+
         if (index !== -1) {
             spots.value.splice(index, 1);
         }
@@ -32,9 +40,10 @@ export const useSpotStore = defineStore('spot', () => {
 
     return {
         spots,
+        loading,
         getSpots,
         getSpot,
         createSpot,
         deleteSpot
-    }
+    };
 });

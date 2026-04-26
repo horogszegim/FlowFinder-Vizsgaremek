@@ -84,13 +84,13 @@ function prevImage() {
 
 <template>
   <BaseLayout>
-    <div class="w-full flex flex-col gap-5 mt-5">
+    <div class="w-full flex flex-col gap-5 mt-5 overflow-x-hidden">
 
-      <div class="flex items-start justify-between">
+      <div class="flex items-start justify-between gap-4 min-w-0">
 
-        <div class="flex items-center gap-5 flex-wrap">
+        <div class="flex items-center gap-5 flex-wrap min-w-0">
 
-          <h1 class="text-5xl font-bold text-text mr-5">
+          <h1 class="text-5xl font-bold text-text mr-5 min-w-0 [overflow-wrap:anywhere] hyphens-auto">
             {{ spot.title }}
           </h1>
 
@@ -103,7 +103,7 @@ function prevImage() {
 
         </div>
 
-        <button @click="toggleBookmark" class="relative link-hover cursor-pointer mt-2 pb-1">
+        <button @click="toggleBookmark" class="relative link-hover cursor-pointer mt-2 pb-1 shrink-0">
           <div class="relative w-10 h-10">
             <img src="@assets/img/bookmark.svg" class="absolute inset-0 w-10 h-10 transition-all duration-400 ease-out"
               :class="bookmarked ? 'opacity-0 rotate-5 translate-y-1' : 'opacity-100'" />
@@ -115,7 +115,8 @@ function prevImage() {
 
       </div>
 
-      <p v-if="spot.created_by?.username" class="text-text-muted text-md -mt-4">
+      <p v-if="spot.created_by?.username"
+        class="text-text-muted text-md -mt-4 min-w-0 [overflow-wrap:anywhere] hyphens-auto">
         Felfedezte: <span class="text-text">{{ spot.created_by.username }}</span>
       </p>
 
@@ -126,7 +127,7 @@ function prevImage() {
         </span>
       </div>
 
-      <p v-if="spot.description" class="text-text-muted text-xl">
+      <p v-if="spot.description" class="text-text-muted text-xl min-w-0 [overflow-wrap:anywhere] hyphens-auto">
         {{ spot.description }}
       </p>
 
@@ -161,7 +162,7 @@ function prevImage() {
 
               <div v-if="images.length > 3"
                 class="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-5xl font-bold">
-                +{{ images.length - 3 }}
+                +{{ images.length - 2 }}
               </div>
             </div>
 

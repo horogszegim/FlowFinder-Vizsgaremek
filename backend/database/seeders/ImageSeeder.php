@@ -22,13 +22,12 @@ class ImageSeeder extends Seeder
             'seed/images/10.png',
         ];
 
-        for ($spotId = 1; $spotId <= 10; $spotId++) {
+        for ($spotId = 1; $spotId <= 1000; $spotId++) {
+            $imageCount = rand(1, 10);
 
-            $imageCount = 10 - $spotId;
-
-            if ($imageCount <= 0) continue;
-
-            $shuffled = collect($availableImages)->shuffle()->take($imageCount);
+            $shuffled = collect($availableImages)
+                ->shuffle()
+                ->take($imageCount);
 
             foreach ($shuffled as $path) {
                 Image::create([
