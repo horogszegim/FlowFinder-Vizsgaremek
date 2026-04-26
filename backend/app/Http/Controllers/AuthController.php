@@ -3,30 +3,44 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
-use Illuminate\Cache\Repository;
+use App\Http\Resources\UserResource;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth ;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    public function authenticate(LoginRequest $request){
+    public function authenticate(LoginRequest $request): JsonResponse
+    {
         $data = $request->validated();
 
-        if(Auth::attempt($data)){
-            $token = $request->user()->createToken("app");
+        if (Auth::attempt($data)) {
+            $user = $request->user();
+            $token = $user->createToken('app');
 
             return response()->json([
-                "data"=> [
-                    "token" => $token->plainTextToken
-                ]
-            ]);            
+                'data' => [
+                    'token' => $token->plainTextToken,
+                    'user' => new UserResource($user),
+                ],
+            ]);
         }
-        else{
-            return response()->json([
-                "data" => [
-                    "message" => "Sikertelen belépés"
-                ]
-            ], 401);
-        }
+
+        return response()->json([
+            'data' => [
+                'message' => 'Sikertelen belépés',
+            ],
+        ], 401);
+    }
+
+    public function logout(Request $request): JsonResponse
+    {
+        $request->user()?->currentAccessToken()?->delete();
+
+        return response()->json([
+            'data' => [
+                'message' => 'Sikeres kijelentkezés',
+            ],
+        ]);
     }
 }

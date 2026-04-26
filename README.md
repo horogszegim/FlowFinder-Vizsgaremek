@@ -2087,3 +2087,305 @@ Az új seed adathalmaz alkalmas:
 * backend lekérdezések valósabb terhelésére
 
 ---
+
+# Profil oldal és admin spotkezelés dokumentáció (Backend + Frontend)
+
+Ez a kiegészítés a profil oldal fejlesztését, az admin jogosultság kezelését, valamint az admin oldali spotkezelést írja le.
+
+---
+
+## Backend módosítások
+
+### Auth rendszer kiegészítése
+
+A frontend profil oldalának működéséhez szükség van arra, hogy a backend visszaadja az aktuálisan bejelentkezett felhasználó adatait.
+
+Használt végpont:
+
+* GET `/api/user`
+
+Middleware:
+
+* `auth:sanctum`
+
+Feladata:
+
+* token alapján azonosítja a bejelentkezett felhasználót
+* visszaadja a user adatait
+* a frontend ebből tudja eldönteni, hogy a user admin-e
+
+Fontos mező:
+
+* `role`
+
+Lehetséges értékek:
+
+* `user`
+* `admin`
+
+---
+
+### Admin jogosultság használata
+
+A users táblában lévő `role` mező alapján történik az admin jogosultság ellenőrzése.
+
+A frontend nem saját maga találja ki, hogy ki admin, hanem a backendről lekért user adatból dolgozik.
+
+Előny:
+
+* biztonságosabb
+* nem csak frontend oldali elrejtés történik
+* a jogosultság a backend adatai alapján dől el
+
+---
+
+### Spot törlés admin felületről
+
+Az admin profil oldalon az admin felhasználó az összes spotot látja, és törölheti őket.
+
+Érintett végpont:
+
+* DELETE `/api/spots/{id}`
+
+Middleware:
+
+* `auth:sanctum`
+
+Törléskor a backend feladata:
+
+* spot rekord törlése
+* spothoz tartozó képrekordok kezelése
+* storage-ban lévő képfájlok törlése
+* spot mappájának törlése
+* kapcsolódó pivot rekordok eltávolítása az adatbázisból
+
+Fontos:
+
+* a sportok és tagek rekordjai nem törlődnek
+* csak a spot és a hozzá kapcsolódó adatok törlődnek
+* ha nincs megfelelő jogosultság, a backend 403-as hibát adhat vissza
+
+---
+
+## Frontend módosítások
+
+## Profil oldal
+
+Fájl:
+
+* `frontend/src/pages/profil.vue`
+
+---
+
+### Áttekintés
+
+A profil oldal feladata:
+
+* bejelentkezett user adatainak megjelenítése
+* kijelentkezés biztosítása
+* admin esetén spotkezelő felület megjelenítése
+* összes spot listázása admin számára
+* spotok törlése admin felületről
+* lapozás nagyobb adatmennyiséghez
+
+---
+
+### Használt store-ok
+
+* `AuthStore`
+* `SpotStore`
+* `ToastStore`
+
+---
+
+### Betöltési folyamat
+
+Oldal betöltésekor:
+
+* lefut az `authStore.fetchUser()`
+* a rendszer lekéri az aktuális usert
+* ha a user admin, lefut a `spotStore.getSpots()`
+* ha a munkamenet lejárt vagy hibás a token, a user kijelentkeztetésre kerül
+* a rendszer átirányítja a felhasználót a bejelentkezés oldalra
+
+Hiba esetén megjelenő toast:
+
+* `A munkamenet lejárt, jelentkezz be újra!`
+
+---
+
+### Admin badge
+
+A korábbi hosszabb admin szöveg helyett egy rövid badge jelenik meg.
+
+Szöveg:
+
+* `Admin`
+
+Elhelyezés:
+
+* a felhasználónév mellett
+* reszponzívan törik, ha kisebb kijelzőn nem fér el egy sorban
+
+Cél:
+
+* letisztultabb profil fejléc
+* kevesebb felesleges szöveg
+* egyértelmű admin jelölés
+
+---
+
+### Kijelentkezés
+
+A kijelentkezés gomb a profil fejléc jobb oldalán jelenik meg.
+
+Működés:
+
+* meghívja az `authStore.logout()` metódust
+* törli a session állapotot a frontendből
+* toast visszajelzést ad
+* átirányít a bejelentkezés oldalra
+
+Sikeres üzenet:
+
+* `Sikeresen kijelentkeztél!`
+
+---
+
+## Admin spotkezelő felület
+
+A spotkezelő felület csak admin jogosultsággal jelenik meg.
+
+Nem admin user esetén a profil oldal csak egy egyszerű üzenetet jelenít meg:
+
+* `Ez egy sima felhasználói profil (nem admin).`
+
+---
+
+### Spot lista
+
+Az admin felületen az összes spot listázva van.
+
+Megjelenítés:
+
+* `BaseSpotBlock` komponenssel
+* minden spot mellett külön törlés gombbal
+* a törlés gomb nem a spot kártyára van rárakva
+* a törlés gomb jobb oldalon, függőlegesen középre igazítva jelenik meg
+
+---
+
+### Loading állapot
+
+A profil oldalon lévő spot betöltés ugyanazt a loading stílust használja, mint a spotkereső oldal.
+
+Megjelenő elemek:
+
+* animált spinner
+* `Spotok betöltése ...` szöveg
+
+Cél:
+
+* egységes UX a spotkereső és a profil oldal között
+* ne legyen különböző loading dizájn ugyanarra a funkcióra
+
+---
+
+### Üres lista állapot
+
+Ha nincs feltöltött spot, a következő szöveg jelenik meg:
+
+* `Nincs még feltöltött spot.`
+
+---
+
+## Lapozás
+
+A profil oldalon a lapozás a spotkereső oldal működéséhez lett igazítva.
+
+Oldalankénti elemszám:
+
+* 100 spot / oldal
+
+### Lapozó működése
+
+A lapozó ugyanazt a logikát követi, mint a `spotkereso.vue`.
+
+Funkciók:
+
+* előző oldal gomb
+* következő oldal gomb
+* SVG nyíl ikonok használata
+* aktuális oldal kiemelése
+* közeli oldalszámok megjelenítése
+* lapváltáskor automatikus visszagörgetés az oldal tetejére
+
+Használt SVG ikonok:
+
+* `left-arrow-white.svg`
+* `right-arrow-white.svg`
+
+---
+
+### Látható oldalszámok
+
+A lapozó az aktuális oldal körüli oldalszámokat jeleníti meg.
+
+Logika:
+
+* aktuális oldal előtt maximum 2 oldal
+* aktuális oldal után maximum 2 oldal
+* az oldalszámok nem mennek 1 alá
+* az oldalszámok nem mennek a maximális oldalszám fölé
+
+---
+
+### Aktuális oldal korrigálása törlés után
+
+Spot törlése után előfordulhat, hogy az aktuális oldal már nem létezik.
+
+Példa:
+
+* a user az utolsó oldalon van
+* törli az utolsó spotot
+* emiatt csökken az oldalak száma
+
+Erre a profil oldal figyel:
+
+* ha az aktuális oldal nagyobb, mint az összes oldal száma, akkor visszaáll az utolsó létező oldalra
+
+---
+
+## Spot törlés frontend oldalon
+
+Törlés előtt a rendszer megerősítést kér.
+
+Megerősítő szöveg:
+
+* `Biztos törölni szeretnéd ezt a spotot: "<spot címe>"?`
+
+Ha a user mégsem töröl:
+
+* nem történik API kérés
+
+Ha megerősíti:
+
+* beáll a `deleteLoadingId`
+* a konkrét törlés gomb disabled állapotba kerül
+* lefut a `spotStore.deleteSpot(spot.id)`
+* siker esetén a spot kikerül a listából
+* toast visszajelzés jelenik meg
+
+Sikeres törlés üzenete:
+
+* `Spot sikeresen törölve!`
+
+Jogosultsági hiba esetén:
+
+* `Nincs jogosultságod a spot törléséhez!`
+
+Általános hiba esetén:
+
+* `Hiba történt a spot törlése közben!`
+
+---
