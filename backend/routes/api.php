@@ -27,7 +27,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    Route::apiResource('/spots', SpotController::class)->only(['store', 'destroy']);
+    Route::patch('/spots/{spot}/images/order', [SpotController::class, 'updateImageOrder']);
+    Route::apiResource('/spots', SpotController::class)->only(['store', 'update', 'destroy']);
     Route::apiResource('/images', ImageController::class)->only(['store', 'destroy']);
     Route::apiResource('/saved-spots', SavedSpotController::class)->except(['update']);
 });

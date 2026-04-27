@@ -2,38 +2,37 @@
 
 namespace Database\Seeders;
 
+use App\Models\Spot;
+use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class SpotSeeder extends Seeder
 {
     public function run(): void
     {
-        $spots = [];
+        $userIds = User::query()->orderBy('id')->pluck('id')->all();
 
-        for ($i = 1; $i <= 1000; $i++) {
-
-            $prefix = $i . '. ';
-            $maxRandomTitleLength = 60 - strlen($prefix);
-            $randomTitleLength = rand(1, max(1, $maxRandomTitleLength));
-
-            $spots[] = [
-                'created_by' => rand(1, 2),
-
-                'title' => $prefix . Str::random($randomTitleLength),
-
-                'description' => $i . '. ' . Str::random(rand(1, 2048)),
-
-                'latitude' => (string) (mt_rand(45500000, 48500000) / 1000000),
-                'longitude' => (string) (mt_rand(16000000, 23000000) / 1000000),
-
-                'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now(),
-            ];
+        if (empty($userIds)) {
+            return;
         }
 
-        DB::table('spots')->insert($spots);
+        $createdByIds = [];
+
+        foreach ($userIds as $userId) {
+            $createdByIds[] = $userId;
+            $createdByIds[] = $userId;
+        }
+
+        while (count($createdByIds) < 550) {
+            $createdByIds[] = $userIds[array_rand($userIds)];
+        }
+
+        shuffle($createdByIds);
+
+        foreach ($createdByIds as $createdById) {
+            Spot::factory()->create([
+                'created_by' => $createdById,
+            ]);
+        }
     }
 }

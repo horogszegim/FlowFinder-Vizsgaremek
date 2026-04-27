@@ -12,7 +12,7 @@ class SavedSpotController extends Controller
     public function index(Request $request)
     {
         return SavedSpotResource::collection(
-            SavedSpot::with(['user', 'spot'])
+            SavedSpot::with(['user', 'spot.user', 'spot.images', 'spot.sportsAndTags'])
                 ->where('user_id', $request->user()->id)
                 ->orderBy('id')
                 ->get()
@@ -29,13 +29,13 @@ class SavedSpotController extends Controller
         ]);
 
         return new SavedSpotResource(
-            $savedSpot->load(['user', 'spot'])
+            $savedSpot->load(['user', 'spot.user', 'spot.images', 'spot.sportsAndTags'])
         );
     }
 
     public function show(SavedSpot $savedSpot)
     {
-        return new SavedSpotResource($savedSpot->load(['user', 'spot']));
+        return new SavedSpotResource($savedSpot->load(['user', 'spot.user', 'spot.images', 'spot.sportsAndTags']));
     }
 
     public function destroy(Request $request, SavedSpot $savedSpot)

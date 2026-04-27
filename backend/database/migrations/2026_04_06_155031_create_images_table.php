@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('spot_id')->constrained('spots')->cascadeOnDelete();
             $table->string('path', 2048);
+            $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();
         });
     }

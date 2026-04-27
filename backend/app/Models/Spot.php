@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Spot extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'title',
         'description',
@@ -24,7 +27,7 @@ class Spot extends Model
 
     public function images(): HasMany
     {
-        return $this->hasMany(Image::class, 'spot_id', 'id');
+        return $this->hasMany(Image::class, 'spot_id', 'id')->orderBy('sort_order')->orderBy('id');
     }
 
     public function sportsAndTags(): BelongsToMany

@@ -16,11 +16,13 @@ class SportsAndTagSeeder extends Seeder
             'MTB',
             'kosárlabda',
             'foci',
+            'frizbi',
 
             'grind',
             'gap',
             'stairs',
             'rail',
+            'curb',
             'ledge',
             'manual pad',
             'quarter pipe',
@@ -32,8 +34,8 @@ class SportsAndTagSeeder extends Seeder
             'pump track',
 
             'skatepark',
-            'street spot',
-            'plaza',
+            'utcai spot',
+            'pláza',
             'erdő',
             'trail',
             'dirt jump',
@@ -43,7 +45,8 @@ class SportsAndTagSeeder extends Seeder
             'haladó',
 
             'szabadtéri',
-            'fedett',
+            'beltéri',
+            'fedett kültéri',
         ];
 
         foreach ($tags as $tag) {

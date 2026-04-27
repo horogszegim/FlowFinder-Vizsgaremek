@@ -2,12 +2,14 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { getTagStyle } from '@utils/tagColors';
+import { useAuthStore } from '@stores/AuthStore';
 
 const props = defineProps({
     spot: Object
 });
 
 const router = useRouter();
+const authStore = useAuthStore();
 
 const goToSpot = () => {
     router.push(`/spotok/${props.spot.id}`);
@@ -15,6 +17,10 @@ const goToSpot = () => {
 
 const firstImage = computed(() => {
     return props.spot?.images?.[0]?.url || new URL('@assets/img/spot-placeholder.png', import.meta.url).href;
+});
+
+const isOwnSpot = computed(() => {
+    return !!authStore.user?.id && props.spot?.created_by?.id === authStore.user.id;
 });
 </script>
 
@@ -37,7 +43,7 @@ const firstImage = computed(() => {
                 </h2>
 
                 <p class="text-sm text-text-muted break-all">
-                    Felfedezte: {{ spot?.created_by?.username || 'Ismeretlen' }}
+                    Felfedezte: {{ spot?.created_by?.username || 'Ismeretlen' }}{{ isOwnSpot ? ' (Te)' : '' }}
                 </p>
             </div>
 

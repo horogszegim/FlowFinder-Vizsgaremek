@@ -18,7 +18,15 @@ export const useSavedSpotStore = defineStore('savedSpot', () => {
         const response = await api.post('saved-spots', {
             spot_id: spotId
         });
-        savedSpots.value.push(response.data.data);
+
+        const saved = response.data.data;
+        const exists = savedSpots.value.some(s => s.id === saved.id);
+
+        if (!exists) {
+            savedSpots.value.push(saved);
+        }
+
+        return saved;
     }
 
     async function deleteSavedSpot(id) {
@@ -34,12 +42,17 @@ export const useSavedSpotStore = defineStore('savedSpot', () => {
         return item ? item.id : null;
     }
 
+    function removeBySpotId(spotId) {
+        savedSpots.value = savedSpots.value.filter(s => s.spot_id !== spotId);
+    }
+
     return {
         savedSpots,
         getSavedSpots,
         isSaved,
         saveSpot,
         deleteSavedSpot,
-        findSavedSpotId
-    }
+        findSavedSpotId,
+        removeBySpotId
+    };
 });

@@ -2389,3 +2389,941 @@ Jogosultsági hiba esetén:
 * `Hiba történt a spot törlése közben!`
 
 ---
+
+# Spot szerkesztés, képsorrend, profil oldal, 404 oldal és seeder frissítések
+
+Ez a rész az előző commit óta bekerült újabb módosításokat írja le.
+
+A módosítások több részt érintenek:
+
+* backend spot kezelés
+* képfeltöltés és képsorrend
+* seedelt adatok
+* profil oldal
+* spot szerkesztés frontend oldalon
+* 404-es oldal
+* kisebb store, route és jogosultsági javítások
+
+---
+
+## Backend módosítások
+
+### Images tábla frissítése
+
+Fájl:
+
+`backend/database/migrations/2026_04_06_155031_create_images_table.php`
+
+Az `images` tábla bővült.
+
+Új mező:
+
+* `sort_order`
+
+Feladata:
+
+* a spothoz tartozó képek sorrendjének tárolása
+* feltöltéskor az új kép a meglévő képek után kerül
+* szerkesztéskor a frontend által küldött sorrend menthető
+
+A `path` mező mérete is módosult.
+
+Korábbi cél:
+
+* lokális storage útvonal tárolása
+
+Új cél:
+
+* lokális storage útvonal tárolása
+* külső kép URL tárolása
+
+Ez azért kellett, mert a seed képek már nem lokálisan vannak tárolva, hanem külső tárhelyről töltődnek be.
+
+---
+
+### Image modell frissítése
+
+Fájl:
+
+`backend/app/Models/Image.php`
+
+A modell `fillable` mezői bővültek.
+
+Újonnan kezelhető mező:
+
+* `sort_order`
+
+Így az Eloquent modell már tömeges létrehozáskor és frissítéskor is tudja kezelni a képek sorrendjét.
+
+---
+
+### ImageResource frissítése
+
+Fájl:
+
+`backend/app/Http/Resources/ImageResource.php`
+
+Az `ImageResource` már kezeli a külső és a belső képeket is.
+
+Működés:
+
+* ha a `path` `http://` vagy `https://` kezdetű, akkor külső URL-ként kerül visszaadásra
+* ha a `path` lokális storage útvonal, akkor a Laravel `Storage::disk('public')->url()` alakítja publikus URL-lé
+* a válaszban megjelenik a `sort_order` is
+
+Visszaadott fontos mezők:
+
+* `id`
+* `spot_id`
+* `path`
+* `url`
+* `sort_order`
+* `spot`, ha be van töltve
+
+Ez egységesíti a feltöltött és seedelt képek frontend oldali használatát.
+
+---
+
+### StoreImageRequest javítás
+
+Fájl:
+
+`backend/app/Http/Requests/StoreImageRequest.php`
+
+A request osztályban bekerült az `authorize()` metódus.
+
+```php
+public function authorize(): bool
+{
+    return true;
+}
+```
+
+Ez azért fontos, mert így a FormRequest nem blokkolja automatikusan a képfeltöltést.
+
+A validáció továbbra is a képfájlokra vonatkozik.
+
+Engedett formátumok:
+
+* jpg
+* jpeg
+* png
+
+Méretlimit:
+
+* maximum 3MB
+
+---
+
+### StoreSpotRequest javítás
+
+Fájl:
+
+`backend/app/Http/Requests/StoreSpotRequest.php`
+
+A request osztályban bekerült az `authorize()` metódus.
+
+Ez megszünteti azt a problémát, hogy a Laravel FormRequest jogosultsági okból elutasíthatja a spot létrehozást vagy szerkesztést.
+
+A validáció szigorítva lett.
+
+Fontos szabályok:
+
+* `title`: kötelező, maximum 60 karakter
+* `description`: kötelező, maximum 2048 karakter
+* `latitude`: kötelező, maximum 25 karakter, csak szám és pont
+* `longitude`: kötelező, maximum 25 karakter, csak szám és pont
+* `sports_and_tags`: opcionális tömb
+* `sports_and_tags.*`: létező tag azonosító
+
+---
+
+### Új UpdateSpotImageOrderRequest
+
+Fájl:
+
+`backend/app/Http/Requests/UpdateSpotImageOrderRequest.php`
+
+Új request osztály készült a képsorrend mentéséhez.
+
+Elvárt adat:
+
+* `image_order`
+
+Típusa:
+
+* tömb
+
+Tartalma:
+
+* image ID-k
+
+Validáció:
+
+* az `image_order` kötelező
+* minden elemnek létező kép azonosítónak kell lennie az `images` táblában
+
+Ez különválasztja a spot adatok szerkesztését és a képek sorrendjének módosítását.
+
+---
+
+### Spot modell frissítése
+
+Fájl:
+
+`backend/app/Models/Spot.php`
+
+A `images()` kapcsolat módosult.
+
+A képek már nem csak simán kapcsolódnak a spothoz, hanem rendezve jönnek vissza.
+
+Rendezés:
+
+1. `sort_order`
+2. `id`
+
+Ennek hatása:
+
+* a spot részletező oldal ugyanabban a sorrendben kapja meg a képeket
+* a profil oldal is rendezett képlistát használ
+* a szerkesztés után mentett képsorrend stabilan megmarad
+
+---
+
+### SpotController frissítése
+
+Fájl:
+
+`backend/app/Http/Controllers/SpotController.php`
+
+A controller több új feladatot kapott.
+
+Új vagy módosított működések:
+
+* spot lista rendezett lekérése
+* spot létrehozás backend oldali `created_by` beállítással
+* spot szerkesztés
+* képsorrend mentése
+* spot törlés jogosultsági ellenőrzéssel
+* admin és tulajdonos alapú jogosultságkezelés
+
+---
+
+#### Spot létrehozás
+
+A `created_by` továbbra sem frontendről érkezik.
+
+A backend állítja be:
+
+```php
+'created_by' => Auth::id()
+```
+
+Ez biztonságosabb, mert a kliens nem tudja meghamisítani a feltöltő felhasználó azonosítóját.
+
+---
+
+#### Spot szerkesztés
+
+Új működés:
+
+* a spot címe módosítható
+* a leírás módosítható
+* a koordináták módosíthatók
+* a tagek módosíthatók
+
+Szerkesztésre jogosult:
+
+* a spot tulajdonosa
+* admin felhasználó
+
+Ha más felhasználó próbálja szerkeszteni:
+
+* 403-as válasz érkezik
+
+---
+
+#### Képsorrend mentése
+
+Új metódus:
+
+`updateImageOrder(UpdateSpotImageOrderRequest $request, Spot $spot)`
+
+Működés:
+
+* a frontend elküldi az image ID-k sorrendjét
+* a backend végigmegy a tömbön
+* minden kép megkapja az új `sort_order` értéket
+* a válaszban frissített spot resource tér vissza
+
+---
+
+#### Spot törlés jogosultsággal
+
+A spot törlés most már ellenőrzi, hogy a felhasználó jogosult-e a törlésre.
+
+Törölhet:
+
+* admin
+* a spot tulajdonosa
+
+Nem törölhet:
+
+* másik sima felhasználó
+
+Törléskor a backend megpróbálja törölni a spothoz tartozó storage fájlokat és könyvtárat is.
+
+---
+
+### API route módosítások
+
+Fájl:
+
+`backend/routes/api.php`
+
+A spot route-ok bővültek.
+
+Fontos endpointok:
+
+* `GET /api/spots`
+* `GET /api/spots/{spot}`
+* `POST /api/spots`
+* `PUT/PATCH /api/spots/{spot}`
+* `DELETE /api/spots/{spot}`
+* `PUT /api/spots/{spot}/images/order`
+
+A képsorrend endpoint védett route.
+
+Ez azt jelenti, hogy csak bejelentkezett user tudja hívni.
+
+A jogosultságot a controller ellenőrzi.
+
+---
+
+### SavedSpotController frissítés
+
+Fájl:
+
+`backend/app/Http/Controllers/SavedSpotController.php`
+
+A mentett spotok kezelése pontosabb lett.
+
+Módosítások:
+
+* a mentett spot lista csak az aktuális felhasználó mentéseit adja vissza
+* a válasz betölti a spothoz tartozó usert, képeket és tageket is
+* mentéskor `firstOrCreate()` fut
+* így ugyanazt a spotot nem menti el többször ugyanannak a usernek
+* törléskor ellenőrzi, hogy a mentés az aktuális userhez tartozik-e
+
+Ez a profil oldali mentett spot lista miatt fontos.
+
+---
+
+## Seeder módosítások
+
+### DatabaseSeeder sorrend
+
+Fájl:
+
+`backend/database/seeders/DatabaseSeeder.php`
+
+A seederek meghívási sorrendje át lett rendezve.
+
+Sorrend:
+
+1. `UserSeeder`
+2. `SportsAndTagSeeder`
+3. `SpotSeeder`
+4. `ImageSeeder`
+5. `SpotSportsAndTagSeeder`
+6. `SavedSpotSeeder`
+
+Ez azért fontos, mert az egymásra épülő adatok csak így jönnek létre helyesen.
+
+Példa:
+
+* előbb kell user
+* utána spot
+* utána kép
+* utána mentett spot
+
+---
+
+### UserSeeder átdolgozása
+
+Fájl:
+
+`backend/database/seeders/UserSeeder.php`
+
+A korábbi kevés tesztfelhasználó helyett több tesztadat jön létre.
+
+Létrehozott felhasználók:
+
+* 10 sima teszt user
+* 3 admin teszt user
+
+A felhasználónevek és e-mailek generált, egységes mintát követnek.
+
+Ez jobb tesztelhetőséget ad a profil, spot, mentés és jogosultsági funkciókhoz.
+
+---
+
+### SportsAndTagSeeder frissítés
+
+Fájl:
+
+`backend/database/seeders/SportsAndTagSeeder.php`
+
+A tag lista bővült és pontosabb lett.
+
+Példák:
+
+* gördeszka
+* roller
+* BMX
+* MTB
+* kosárlabda
+* foci
+* frizbi
+* grind
+* rail
+* pump track
+* skatepark
+* utcai spot
+* kezdőbarát
+* haladó
+
+A seeder `firstOrCreate()` használatával dolgozik.
+
+Ez csökkenti a duplikáció esélyét.
+
+---
+
+### SpotFactory megírása
+
+Fájl:
+
+`backend/database/factories/SpotFactory.php`
+
+A spot factory már saját szókészletből generál adatokat.
+
+Generált adatok:
+
+* cím
+* leírás
+* magyarországi latitude
+* magyarországi longitude
+
+Fontos korlátok:
+
+* cím maximum 60 karakter
+* leírás maximum 2048 karakter
+* koordináta magyarországi tartományban generálódik
+
+Ez a frontend és backend validációhoz jobban illeszkedő tesztadatokat ad.
+
+---
+
+### SpotSeeder átdolgozása
+
+Fájl:
+
+`backend/database/seeders/SpotSeeder.php`
+
+A spotok generálása nagyobb tesztadat mennyiséget hoz létre.
+
+Működés:
+
+* minden user legalább több spotot kap
+* a maradék spotok véletlenszerű userhez kerülnek
+* összesen 550 spot jön létre
+
+Ez a lapozás, profil lista, spotkereső és mentési rendszer teszteléséhez kellett.
+
+---
+
+### ImageSeeder átdolgozása
+
+Fájl:
+
+`backend/database/seeders/ImageSeeder.php`
+
+A seed képek már külső tárhelyről jönnek.
+
+Képek forrása:
+
+* külső `https://i.ibb.co/...` URL-ek
+
+Működés:
+
+* minden spot 1 és 10 közötti képet kap
+* egy spoton belül a kiválasztott képek keverve kerülnek be
+* a képek `sort_order` értéket kapnak
+* a képek nem a repositoryban foglalják a helyet
+
+Ez csökkenti a projekt méretét és könnyebbé teszi a seedelt spotok vizuális tesztelését.
+
+---
+
+### SavedSpotSeeder hozzáadása
+
+Fájl:
+
+`backend/database/seeders/SavedSpotSeeder.php`
+
+Új seeder készült a mentett spotokhoz.
+
+Működés:
+
+* végigmegy az összes useren
+* minden user több creator spotjaiból kap mentéseket
+* `firstOrCreate()` miatt nem hoz létre felesleges duplikációt
+
+Ez azért kellett, hogy a profil oldalon a mentett spot lista már seedelés után is tesztelhető legyen.
+
+---
+
+## Frontend módosítások
+
+### Új közös SpotForm komponens
+
+Fájl:
+
+`frontend/src/components/SpotForm.vue`
+
+A spot feltöltés és spot szerkesztés közös űrlapkomponenst kapott.
+
+Cél:
+
+* ne legyen duplikált form logika
+* ugyanaz a validáció fusson feltöltésnél és szerkesztésnél
+* a képfeltöltés és képsorrend kezelése egységes legyen
+
+---
+
+#### SpotForm fő funkciók
+
+A komponens kezeli:
+
+* cím megadását
+* leírás megadását
+* latitude mezőt
+* longitude mezőt
+* tag kiválasztást
+* képfeltöltést
+* képelőnézetet
+* kép törlést
+* képsorrend módosítást
+* validációs hibákat
+* mentés és megszakítás gombokat
+
+---
+
+#### Képkezelés a SpotForm komponensben
+
+Támogatott működések:
+
+* meglévő képek megjelenítése
+* új képek hozzáadása
+* új képek preview URL-lel való megjelenítése
+* képek mozgatása balra
+* képek mozgatása jobbra
+* meglévő képek törlésre jelölése
+* új képek azonnali eltávolítása
+* object URL-ek felszabadítása komponens bezáráskor
+
+Limit:
+
+* maximum 10 kép
+* maximum 3MB képenként
+* csak JPG és PNG
+
+---
+
+#### Tag kezelés a SpotForm komponensben
+
+A tag kiválasztás kattintással működik.
+
+Limit:
+
+* maximum 5 tag
+
+Ha a user túllépi:
+
+* hibaüzenet jelenik meg
+* nem kerül hozzáadásra új tag
+
+---
+
+#### Submit adatok
+
+A komponens submitkor átadja:
+
+* spot alapadatok
+* kiválasztott tagek
+* új képek
+* törlésre jelölt meglévő kép ID-k
+* végleges képsorrend
+
+Ez alapján ugyanaz a komponens használható új spot létrehozására és meglévő spot szerkesztésére is.
+
+---
+
+### Feltöltés oldal egyszerűsítése
+
+Fájl:
+
+`frontend/src/pages/feltoltes.vue`
+
+A feltöltés oldal már a közös `SpotForm` komponenst használja.
+
+Feladata:
+
+* bejelentkezés ellenőrzése
+* tagek betöltése
+* spot létrehozása
+* új képek feltöltése
+* sikeres feltöltés után átirányítás a spot oldalára
+
+Sikeres feltöltés után:
+
+* toast üzenet jelenik meg
+* redirect történik a létrehozott spot részletező oldalára
+
+---
+
+### Új spot szerkesztő oldal
+
+Fájl:
+
+`frontend/src/pages/spotok/[id]/szerkesztes.vue`
+
+Új oldal készült a meglévő spotok szerkesztéséhez.
+
+Route cél:
+
+* `/spotok/{id}/szerkesztes`
+
+Az oldal betölti:
+
+* a spot adatait
+* a spot képeit
+* a spot tagjeit
+* a bejelentkezett user adatait
+* a tagek listáját
+
+---
+
+#### Szerkesztési jogosultság frontend oldalon
+
+Szerkeszthet:
+
+* admin
+* a spot tulajdonosa
+
+Ha nincs bejelentkezve:
+
+* átirányítás a bejelentkezés oldalra
+
+Ha nincs jogosultsága:
+
+* hibaüzenet jelenik meg
+* visszairányítás a spot részletező oldalára
+
+A backend ettől függetlenül külön is ellenőrzi a jogosultságot.
+
+---
+
+#### Spot mentés szerkesztéskor
+
+Mentéskor több lépés fut le.
+
+Lépések:
+
+1. spot alapadatok frissítése
+2. törlésre jelölt régi képek törlése
+3. új képek feltöltése
+4. végleges képsorrend mentése
+5. friss spot adatok betöltése
+6. átirányítás a spot részletező oldalára
+7. sikeres toast megjelenítése
+
+Ez biztosítja, hogy az adatok, képek és sorrend együtt frissüljenek.
+
+---
+
+### SpotStore frissítés
+
+Fájl:
+
+`frontend/src/stores/SpotStore.js`
+
+Új vagy módosított metódusok:
+
+* `getSpots()`
+* `getSpot(id)`
+* `createSpot(spotData)`
+* `updateSpot(id, spotData)`
+* `updateImageOrder(id, imageOrder)`
+* `deleteSpot(id)`
+
+Fontos működés:
+
+* a `deleteSpot()` a helyi state-ből is eltávolítja a törölt spotot
+* az `updateSpot()` frissíti a spot adatait
+* az `updateImageOrder()` a backend képsorrend endpointját hívja
+
+---
+
+### ImageStore frissítés
+
+Fájl:
+
+`frontend/src/stores/ImageStore.js`
+
+Az `uploadImage()` metódus bővült.
+
+Új paraméter:
+
+* `sortOrder`
+
+A feltöltés `FormData` objektummal történik.
+
+Küldött adatok:
+
+* `spot_id`
+* `image`
+* `sort_order`, ha van érték
+
+Ez lehetővé teszi, hogy az újonnan feltöltött képek is rögtön sorrendben kerüljenek mentésre.
+
+---
+
+### SavedSpotStore frissítés
+
+Fájl:
+
+`frontend/src/stores/SavedSpotStore.js`
+
+Új metódus:
+
+* `removeBySpotId(spotId)`
+
+Feladata:
+
+* törölt spot esetén a mentett spot state-ből is eltávolítani az adott elemet
+
+Ez főleg a profil oldali törlés után fontos.
+
+---
+
+### Spot részletező oldal frissítése
+
+Fájl:
+
+`frontend/src/pages/spotok/[id].vue`
+
+Új vagy módosított működések:
+
+* a részletező oldal kezeli a szerkesztő alroute megjelenítését
+* ha szerkesztő oldal aktív, akkor a részletező tartalom helyett a szerkesztő jelenik meg
+* a spot tulajdonosánál saját spot jelölés jelenik meg
+* a cím tördelése javítva lett
+* a képek és tagek megjelenítése az új adatszerkezethez igazodik
+* a kép carousel új funkciókkal bővült, a lapozáson kívül nyomonkövethető, hogy hol tartunk a képek között
+
+Szerkesztésre navigáló útvonal:
+
+* `/spotok/{id}/szerkesztes`
+
+---
+
+### Profil oldal frissítése
+
+Fájl:
+
+`frontend/src/pages/profil.vue`
+
+A profil oldal jelentősen bővült.
+
+Fő részek:
+
+* felhasználói adatok megjelenítése
+* feltöltött spotok listája
+* mentett spotok listája
+* lapozás
+* törlés saját spotoknál
+* loading állapotok
+* üres lista állapotok
+* toast visszajelzések
+
+---
+
+#### Feltöltött spotok a profil oldalon
+
+A profil oldal kilistázza az aktuális user által feltöltött spotokat.
+
+A lista a spotkeresőben használt kártyás megjelenítésre épül.
+
+Kezelt állapotok:
+
+* betöltés
+* üres lista
+* több oldalnyi találat
+* törlés folyamatban
+
+---
+
+#### Mentett spotok a profil oldalon
+
+A profil oldal a mentett spotokat is külön listázza.
+
+Ehhez a backend már a mentett spothoz tartozó spot adatokat, képeket, tageket és feltöltőt is visszaadja.
+
+Ez azért kellett, hogy a mentett spotok teljes értékű kártyaként jelenhessenek meg.
+
+---
+
+#### Spot törlés profilból
+
+A saját feltöltött spot törölhető a profil oldalról.
+
+Működés:
+
+* a user megerősítő kérdést kap
+* törlés közben az adott gomb disabled állapotba kerül
+* sikeres törlés után a spot eltűnik a listából
+* ha a spot mentve is volt, akkor a mentett listából is kikerülhet
+* sikeres és hibás esetben toast jelenik meg
+
+Jogosultsági hiba esetén külön üzenet jelenik meg.
+
+---
+
+#### Profil oldali lapozás
+
+A profil oldalon lapozás működik a feltöltött spotokra és a mentett spotokra is.
+
+Működés:
+
+* előző oldal
+* következő oldal
+* aktuális oldal kiemelése
+* közeli oldalszámok megjelenítése
+* törlés után az oldal korrigálása
+* lapváltáskor az oldal tetejére görgetés
+
+Ez a nagyobb seedelt adatmennyiség miatt lett fontos.
+
+---
+
+### BaseSpotBlock frissítés
+
+Fájl:
+
+`frontend/src/components/BaseSpotBlock.vue`
+
+A spot kártya megjelenítése igazodott az új működéshez.
+
+Fontosabb célok:
+
+* képek egységes kezelése
+* feltöltő nevének stabil megjelenítése
+* spot részletező oldalra navigálás
+* fallback kép használata, ha nincs kép
+
+---
+
+### Új 404-es oldal
+
+Fájl:
+
+`frontend/src/pages/[...all].vue`
+
+Új catch-all oldal készült a nem létező útvonalakhoz.
+
+Feladata:
+
+* jelezni, hogy az oldal nem található
+* visszavezetni a usert a főoldalra
+* egységes FlowFinder megjelenést adni hibás URL esetén
+
+Megjelenő elemek:
+
+* 404 cím
+* rövid magyarázó szöveg
+* vissza a főoldalra gomb
+* FlowFinder kép
+
+---
+
+### Új frontend assetek
+
+Új vagy érintett képi elemek:
+
+* `frontend/src/assets/img/edit-black.svg`
+* `frontend/src/assets/img/trash-white.svg`
+
+Felhasználás:
+
+* szerkesztés gomb
+* törlés gomb
+* profil és spot műveletek vizuális jelölése
+
+---
+
+## Egyéb fontos javítások
+
+### Külső képek kezelése
+
+A projekt már nem lokális storage képekkel seedek.
+
+A backend és a frontend is úgy lett módosítva, hogy működjön:
+
+* lokális feltöltött képpel
+* külső URL-ből érkező seed képpel
+
+Ez a seedelés miatt fontos, mert így a tesztadatokhoz nem kell nagy mennyiségű képfájlt a repositoryban tárolni.
+
+---
+
+### FormRequest blokkolás megszüntetése
+
+Több request osztályban bekerült az `authorize()` metódus.
+
+Ez azért fontos, mert enélkül a Laravel FormRequest alapértelmezetten jogosultsági hibával megakaszthat bizonyos kéréseket.
+
+Érintett részek:
+
+* spot létrehozás
+* spot szerkesztés
+* képfeltöltés
+* képsorrend módosítás
+
+---
+
+### Jogosultsági logika pontosítása
+
+A spot kezelésben egységesebb lett a jogosultsági logika.
+
+Admin:
+
+* szerkeszthet spotot
+* törölhet spotot
+
+Tulajdonos:
+
+* szerkesztheti a saját spotját
+* törölheti a saját spotját
+
+Másik user:
+
+* nem szerkeszthet
+* nem törölhet
+
+A frontend csak akkor mutatja a műveleti gombokat, ha a user jogosult lehet rá.
+
+A backend ettől függetlenül külön ellenőrzi a jogosultságot.
+
+---

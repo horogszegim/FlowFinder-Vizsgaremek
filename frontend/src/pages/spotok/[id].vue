@@ -1,14 +1,15 @@
 <script setup>
 import BaseLayout from '@layouts/BaseLayout.vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter, RouterView } from 'vue-router';
 import { useSpotStore } from '@stores/SpotStore';
 import { useSavedSpotStore } from '@stores/SavedSpotStore';
 import { useAuthStore } from '@stores/AuthStore';
 import { useToastStore } from '@/stores/ToastStore';
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, nextTick } from 'vue';
 import { getTagStyle } from '@utils/tagColors';
 
 const route = useRoute();
+const router = useRouter();
 const spotStore = useSpotStore();
 const savedSpotStore = useSavedSpotStore();
 const authStore = useAuthStore();
@@ -20,13 +21,27 @@ const bookmarked = ref(false);
 
 const galleryOpen = ref(false);
 const activeImage = ref(0);
+const thumbnailRefs = ref([]);
 
 const images = computed(() =>
   spot.value?.images?.map(img => img.url) || []
 );
 
+const isOwnSpot = computed(() => {
+  return !!authStore.user?.id && spot.value?.created_by?.id === authStore.user.id;
+});
+
 onMounted(async () => {
-  spot.value = await spotStore.getSpot(route.params.id);
+  if (route.name === 'spot-szerkesztes') {
+    return;
+  }
+
+  try {
+    spot.value = await spotStore.getSpot(route.params.id);
+  } catch {
+    router.replace({ name: 'spotkereso' });
+    return;
+  }
 
   if (authStore.isAuthenticated) {
     await savedSpotStore.getSavedSpots();
@@ -67,23 +82,43 @@ async function toggleBookmark() {
 function openGallery(index) {
   activeImage.value = index;
   galleryOpen.value = true;
+  scrollActiveThumbnailIntoView();
 }
 
 function closeGallery() {
   galleryOpen.value = false;
 }
 
+function setActiveImage(index) {
+  activeImage.value = index;
+  scrollActiveThumbnailIntoView();
+}
+
 function nextImage() {
   activeImage.value = (activeImage.value + 1) % images.value.length;
+  scrollActiveThumbnailIntoView();
 }
 
 function prevImage() {
   activeImage.value = (activeImage.value - 1 + images.value.length) % images.value.length;
+  scrollActiveThumbnailIntoView();
+}
+
+function scrollActiveThumbnailIntoView() {
+  nextTick(() => {
+    const element = thumbnailRefs.value[activeImage.value];
+
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  });
 }
 </script>
 
 <template>
-  <BaseLayout>
+  <RouterView v-if="$route.name === 'spot-szerkesztes'" />
+
+  <BaseLayout v-else>
     <div class="w-full flex flex-col gap-5 mt-5 overflow-x-hidden">
 
       <div class="flex items-start justify-between gap-4 min-w-0">
@@ -117,7 +152,7 @@ function prevImage() {
 
       <p v-if="spot.created_by?.username"
         class="text-text-muted text-md -mt-4 min-w-0 [overflow-wrap:anywhere] hyphens-auto">
-        Felfedezte: <span class="text-text">{{ spot.created_by.username }}</span>
+        Felfedezte: <span class="text-text">{{ spot.created_by.username }}{{ isOwnSpot ? ' (Te)' : '' }}</span>
       </p>
 
       <div v-if="spot.sports_and_tags?.length" class="flex lg:hidden flex-wrap gap-3 -mt-1">
@@ -188,28 +223,44 @@ function prevImage() {
   <transition enter-active-class="transition duration-300" enter-from-class="opacity-0" enter-to-class="opacity-100"
     leave-active-class="transition duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
 
-    <div v-if="galleryOpen" class="fixed inset-0 bg-black/85 flex items-center justify-center z-50"
+    <div v-if="galleryOpen"
+      class="fixed inset-0 bg-black/85 flex flex-col items-center justify-center gap-5 p-5 lg:p-8 z-50"
       @click="closeGallery">
 
       <button
-        class="absolute cursor-pointer top-5 right-5 lg:top-8 lg:right-8 bg-white/25 backdrop-blur-lg p-3 rounded-2xl transition hover:bg-white/40 hover:scale-105 active:scale-95"
+        class="absolute cursor-pointer top-5 right-5 lg:top-8 lg:right-8 h-12 w-12 rounded-xl bg-background shadow-lg transition hover:brightness-95 active:scale-95 flex items-center justify-center"
         @click.stop="closeGallery">
-        <img src="@assets/img/x-white.svg" class="h-6 w-6 lg:h-8 lg:w-8" />
+        <img src="@assets/img/x-white.svg" class="h-5 w-5 invert" />
       </button>
 
-      <button
-        class="absolute cursor-pointer left-1/2 -translate-x-[150%] bottom-10 lg:bottom-auto lg:left-8 lg:translate-x-0 bg-white/25 backdrop-blur-lg p-3 rounded-2xl transition hover:bg-white/40 hover:scale-105 active:scale-95"
-        @click.stop="prevImage">
-        <img src="@assets/img/left-arrow-white.svg" class="h-6 w-6 lg:h-8 lg:w-8" />
-      </button>
+      <div class="w-full flex-1 min-h-0 flex items-center justify-center">
+        <img :src="images[activeImage]" class="max-h-full max-w-[90vw] object-contain" @click.stop />
+      </div>
 
-      <img :src="images[activeImage]" class="max-h-[90vh] max-w-[90vw] object-contain" @click.stop />
+      <div v-if="images.length > 1" class="w-full flex items-center justify-center gap-3" @click.stop>
+        <button
+          class="cursor-pointer h-12 w-12 shrink-0 rounded-xl bg-background shadow-lg transition hover:brightness-95 active:scale-95 flex items-center justify-center"
+          @click="prevImage">
+          <img src="@assets/img/left-arrow-white.svg" class="h-5 w-5 invert" />
+        </button>
 
-      <button
-        class="absolute cursor-pointer left-1/2 translate-x-[50%] bottom-10 lg:bottom-auto lg:left-auto lg:right-8 lg:translate-x-0 bg-white/25 backdrop-blur-lg p-3 rounded-2xl transition hover:bg-white/40 hover:scale-105 active:scale-95"
-        @click.stop="nextImage">
-        <img src="@assets/img/right-arrow-white.svg" class="h-6 w-6 lg:h-8 lg:w-8" />
-      </button>
+        <div class="max-w-[calc(100vw-8rem)] overflow-x-auto">
+          <div class="flex gap-3 min-w-max px-1 py-1">
+            <button v-for="(img, i) in images" :key="i" :ref="el => thumbnailRefs[i] = el"
+              class="cursor-pointer w-15 h-15 lg:w-20 lg:h-20 shrink-0 rounded-xl overflow-hidden border shadow-lg transition hover:brightness-95 active:scale-95"
+              :class="i === activeImage ? 'border-primary-dark ring-2 ring-primary-dark' : 'border-text-muted opacity-70'"
+              @click="setActiveImage(i)">
+              <img :src="img" class="w-full h-full object-cover" />
+            </button>
+          </div>
+        </div>
+
+        <button
+          class="cursor-pointer h-12 w-12 shrink-0 rounded-xl bg-background shadow-lg transition hover:brightness-95 active:scale-95 flex items-center justify-center"
+          @click="nextImage">
+          <img src="@assets/img/right-arrow-white.svg" class="h-5 w-5 invert" />
+        </button>
+      </div>
 
     </div>
 

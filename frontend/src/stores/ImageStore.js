@@ -10,27 +10,28 @@ export const useImageStore = defineStore('image', () => {
         images.value = response.data.data;
     }
 
-    async function getImage(id) {
-        const response = await api.get(`images/${id}`);
-        return response.data.data;
-    }
-
     async function uploadImage(file, spotId) {
         const formData = new FormData();
         formData.append('image', file);
         formData.append('spot_id', spotId);
 
-        const response = await api.post('images', formData);
+        const response = await api.post('images', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
 
-        images.value.push(response.data.data);
+        const created = response.data.data;
+        images.value.push(created);
 
-        return response.data.data;
+        return created;
     }
 
     async function deleteImage(id) {
         await api.delete(`images/${id}`);
 
-        const index = images.value.findIndex(i => i.id === id);
+        const index = images.value.findIndex(image => image.id === id);
+
         if (index !== -1) {
             images.value.splice(index, 1);
         }
@@ -39,8 +40,7 @@ export const useImageStore = defineStore('image', () => {
     return {
         images,
         getImages,
-        getImage,
         uploadImage,
         deleteImage
-    }
+    };
 });

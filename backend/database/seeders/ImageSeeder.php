@@ -2,37 +2,45 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Image;
+use App\Models\Spot;
+use Illuminate\Database\Seeder;
 
 class ImageSeeder extends Seeder
 {
     public function run(): void
     {
         $availableImages = [
-            'seed/images/1.png',
-            'seed/images/2.png',
-            'seed/images/3.png',
-            'seed/images/4.png',
-            'seed/images/5.png',
-            'seed/images/6.png',
-            'seed/images/7.png',
-            'seed/images/8.png',
-            'seed/images/9.png',
-            'seed/images/10.png',
+            'https://i.ibb.co/rRjPPPZz/1.png',
+            'https://i.ibb.co/m5rTn0Sq/2.png',
+            'https://i.ibb.co/ynbqYxnN/3.png',
+            'https://i.ibb.co/sd2JCKJK/4.png',
+            'https://i.ibb.co/Nddq8HJx/5.png',
+            'https://i.ibb.co/JWSpH0Fm/6.png',
+            'https://i.ibb.co/CNPT1yf/7.png',
+            'https://i.ibb.co/LD06c7pd/8.png',
+            'https://i.ibb.co/wFtYywK7/9.png',
+            'https://i.ibb.co/0NbKvg7/10.png',
+            'https://i.ibb.co/1Y3tmnnL/11.png',
+            'https://i.ibb.co/TMP1RFkf/12.png',
+            'https://i.ibb.co/d4k6DQtW/13.png',
+            'https://i.ibb.co/XktGd2X5/14.png',
+            'https://i.ibb.co/ZpsDZK9W/15.png',
         ];
 
-        for ($spotId = 1; $spotId <= 1000; $spotId++) {
+        foreach (Spot::query()->orderBy('id')->get() as $spot) {
             $imageCount = rand(1, 10);
 
-            $shuffled = collect($availableImages)
-                ->shuffle()
-                ->take($imageCount);
+            $randomImages = $availableImages;
+            shuffle($randomImages);
 
-            foreach ($shuffled as $path) {
+            $selectedImages = array_slice($randomImages, 0, $imageCount);
+
+            foreach ($selectedImages as $index => $imagePath) {
                 Image::create([
-                    'spot_id' => $spotId,
-                    'path' => $path,
+                    'spot_id' => $spot->id,
+                    'path' => $imagePath,
+                    'sort_order' => $index + 1,
                 ]);
             }
         }

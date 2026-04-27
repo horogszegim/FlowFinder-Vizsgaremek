@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreSpotRequest;
+use App\Http\Requests\UpdateSpotImageOrderRequest;
 use App\Http\Resources\SpotResource;
 use App\Models\Spot;
-use Illuminate\Support\Facades\Storage;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class SpotController extends Controller
 {
@@ -21,13 +23,15 @@ class SpotController extends Controller
     {
         $data = $request->validated();
 
-        $data['created_by'] = Auth::id();
+        $spot = Spot::create([
+            'title' => $data['title'],
+            'description' => $data['description'],
+            'latitude' => $data['latitude'],
+            'longitude' => $data['longitude'],
+            'created_by' => Auth::id(),
+        ]);
 
-        $spot = Spot::create($data);
-
-        if (isset($data['sports_and_tags'])) {
-            $spot->sportsAndTags()->sync($data['sports_and_tags']);
-        }
+        $spot->sportsAndTags()->sync($data['sports_and_tags'] ?? []);
 
         return new SpotResource($spot->load(['user', 'images', 'sportsAndTags']));
     }
@@ -37,8 +41,50 @@ class SpotController extends Controller
         return new SpotResource($spot->load(['user', 'images', 'sportsAndTags']));
     }
 
+    public function update(StoreSpotRequest $request, Spot $spot)
+    {
+        if (! $this->canManageSpot($spot, $request->user())) {
+            abort(403);
+        }
+
+        $data = $request->validated();
+
+        $spot->update([
+            'title' => $data['title'],
+            'description' => $data['description'],
+            'latitude' => $data['latitude'],
+            'longitude' => $data['longitude'],
+        ]);
+
+        $spot->sportsAndTags()->sync($data['sports_and_tags'] ?? []);
+
+        return new SpotResource($spot->load(['user', 'images', 'sportsAndTags']));
+    }
+
+    public function updateImageOrder(UpdateSpotImageOrderRequest $request, Spot $spot)
+    {
+        if (! $this->canManageSpot($spot, $request->user())) {
+            abort(403);
+        }
+
+        $data = $request->validated();
+        $requestedImageIds = array_map('intval', $data['image_order']);
+
+        foreach ($requestedImageIds as $index => $imageId) {
+            $spot->images()->where('id', $imageId)->update([
+                'sort_order' => $index + 1,
+            ]);
+        }
+
+        return new SpotResource($spot->fresh()->load(['user', 'images', 'sportsAndTags']));
+    }
+
     public function destroy(Spot $spot)
     {
+        if (! $this->canManageSpot($spot, request()->user())) {
+            abort(403);
+        }
+
         $spot->load('images');
 
         foreach ($spot->images as $image) {
@@ -54,5 +100,10 @@ class SpotController extends Controller
         }
 
         return abort(500);
+    }
+
+    private function canManageSpot(Spot $spot, ?User $user): bool
+    {
+        return $user && ($user->role === 'admin' || (int) $spot->created_by === (int) $user->id);
     }
 }
