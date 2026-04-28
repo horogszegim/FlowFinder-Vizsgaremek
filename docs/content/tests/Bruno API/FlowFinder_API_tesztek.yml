@@ -1,0 +1,524 @@
+opencollection: 1.0.0
+info:
+  name: FlowFinder API tesztek
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ''
+      port: ''
+      auth:
+        username: ''
+        password: ''
+      bypassProxy: ''
+items:
+  - info:
+      name: auth
+      type: folder
+      seq: 1
+    items:
+      - info:
+          name: auth.registration
+          type: http
+          seq: 1
+        http:
+          method: POST
+          url: http://backend.vm1.test/api/registration
+          headers:
+            - name: Accept
+              value: 'application/json'
+            - name: Content-Type
+              value: 'application/json'
+          body:
+            type: json
+            data: |-
+              {
+                "username": "bruno_test_user_01",
+                "email": "bruno.test.user.01@flowfinder.hu",
+                "password": "User123!",
+                "password_confirmation": "User123!"
+              }
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+      - info:
+          name: auth.login.user
+          type: http
+          seq: 2
+        http:
+          method: POST
+          url: http://backend.vm1.test/api/login
+          headers:
+            - name: Accept
+              value: 'application/json'
+            - name: Content-Type
+              value: 'application/json'
+          body:
+            type: json
+            data: |-
+              {
+                "email": "testuser.1@flowfinder.hu",
+                "password": "TestUser1!"
+              }
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+      - info:
+          name: auth.login.admin
+          type: http
+          seq: 3
+        http:
+          method: POST
+          url: http://backend.vm1.test/api/login
+          headers:
+            - name: Accept
+              value: 'application/json'
+            - name: Content-Type
+              value: 'application/json'
+          body:
+            type: json
+            data: |-
+              {
+                "email": "testadmin.1@flowfinder.hu",
+                "password": "TestAdmin1!"
+              }
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+      - info:
+          name: auth.user
+          type: http
+          seq: 4
+        http:
+          method: GET
+          url: http://backend.vm1.test/api/user
+          headers:
+            - name: Accept
+              value: 'application/json'
+            - name: Authorization
+              value: 'Bearer {{user_token}}'
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+      - info:
+          name: auth.logout
+          type: http
+          seq: 5
+        http:
+          method: POST
+          url: http://backend.vm1.test/api/logout
+          headers:
+            - name: Accept
+              value: 'application/json'
+            - name: Authorization
+              value: 'Bearer {{user_token}}'
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+  - info:
+      name: users
+      type: folder
+      seq: 2
+    items:
+      - info:
+          name: user.index
+          type: http
+          seq: 1
+        http:
+          method: GET
+          url: http://backend.vm1.test/api/users
+          headers:
+            - name: Accept
+              value: 'application/json'
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+      - info:
+          name: user.show
+          type: http
+          seq: 2
+        http:
+          method: GET
+          url: http://backend.vm1.test/api/users/1
+          headers:
+            - name: Accept
+              value: 'application/json'
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+  - info:
+      name: sports_and_tags
+      type: folder
+      seq: 3
+    items:
+      - info:
+          name: sports-and-tag.index
+          type: http
+          seq: 1
+        http:
+          method: GET
+          url: http://backend.vm1.test/api/sports-and-tags
+          headers:
+            - name: Accept
+              value: 'application/json'
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+      - info:
+          name: sports-and-tag.show
+          type: http
+          seq: 2
+        http:
+          method: GET
+          url: http://backend.vm1.test/api/sports-and-tags/1
+          headers:
+            - name: Accept
+              value: 'application/json'
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+  - info:
+      name: spots
+      type: folder
+      seq: 4
+    items:
+      - info:
+          name: spot.index
+          type: http
+          seq: 1
+        http:
+          method: GET
+          url: http://backend.vm1.test/api/spots
+          headers:
+            - name: Accept
+              value: 'application/json'
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+      - info:
+          name: spot.show
+          type: http
+          seq: 2
+        http:
+          method: GET
+          url: http://backend.vm1.test/api/spots/1
+          headers:
+            - name: Accept
+              value: 'application/json'
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+      - info:
+          name: spot.store
+          type: http
+          seq: 3
+        http:
+          method: POST
+          url: http://backend.vm1.test/api/spots
+          headers:
+            - name: Accept
+              value: 'application/json'
+            - name: Content-Type
+              value: 'application/json'
+            - name: Authorization
+              value: 'Bearer {{admin_token}}'
+          body:
+            type: json
+            data: |-
+              {
+                "title": "Bruno Teszt Spot",
+                "description": "Bruno által létrehozott teszt spot.",
+                "latitude": "47.4979",
+                "longitude": "19.0402",
+                "sports_and_tags": [1, 2, 3]
+              }
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+      - info:
+          name: spot.update
+          type: http
+          seq: 4
+        http:
+          method: PUT
+          url: http://backend.vm1.test/api/spots/1
+          headers:
+            - name: Accept
+              value: 'application/json'
+            - name: Content-Type
+              value: 'application/json'
+            - name: Authorization
+              value: 'Bearer {{admin_token}}'
+          body:
+            type: json
+            data: |-
+              {
+                "title": "Bruno Teszt Spot Módosítva",
+                "description": "Bruno által módosított teszt spot.",
+                "latitude": "47.4979",
+                "longitude": "19.0402",
+                "sports_and_tags": [1, 2]
+              }
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+      - info:
+          name: spot.image-order.update
+          type: http
+          seq: 5
+        http:
+          method: PATCH
+          url: http://backend.vm1.test/api/spots/1/images/order
+          headers:
+            - name: Accept
+              value: 'application/json'
+            - name: Content-Type
+              value: 'application/json'
+            - name: Authorization
+              value: 'Bearer {{admin_token}}'
+          body:
+            type: json
+            data: |-
+              {
+                "image_order": [1]
+              }
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+      - info:
+          name: spot.destroy
+          type: http
+          seq: 6
+        http:
+          method: DELETE
+          url: http://backend.vm1.test/api/spots/550
+          headers:
+            - name: Accept
+              value: 'application/json'
+            - name: Authorization
+              value: 'Bearer {{admin_token}}'
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+  - info:
+      name: images
+      type: folder
+      seq: 5
+    items:
+      - info:
+          name: image.index
+          type: http
+          seq: 1
+        http:
+          method: GET
+          url: http://backend.vm1.test/api/images
+          headers:
+            - name: Accept
+              value: 'application/json'
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+      - info:
+          name: image.show
+          type: http
+          seq: 2
+        http:
+          method: GET
+          url: http://backend.vm1.test/api/images/1
+          headers:
+            - name: Accept
+              value: 'application/json'
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+      - info:
+          name: image.store
+          type: http
+          seq: 3
+        http:
+          method: POST
+          url: http://backend.vm1.test/api/images
+          headers:
+            - name: Accept
+              value: 'application/json'
+            - name: Authorization
+              value: 'Bearer {{admin_token}}'
+          body:
+            type: multipart-form
+            data:
+              - name: spot_id
+                type: text
+                value: '1'
+              - name: image
+                type: file
+                value:
+                  - ./frontend/src/assets/img/spot-placeholder.png
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+      - info:
+          name: image.destroy
+          type: http
+          seq: 4
+        http:
+          method: DELETE
+          url: http://backend.vm1.test/api/images/1
+          headers:
+            - name: Accept
+              value: 'application/json'
+            - name: Authorization
+              value: 'Bearer {{admin_token}}'
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+  - info:
+      name: saved_spots
+      type: folder
+      seq: 6
+    items:
+      - info:
+          name: saved-spot.index
+          type: http
+          seq: 1
+        http:
+          method: GET
+          url: http://backend.vm1.test/api/saved-spots
+          headers:
+            - name: Accept
+              value: 'application/json'
+            - name: Authorization
+              value: 'Bearer {{user_token}}'
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+      - info:
+          name: saved-spot.store
+          type: http
+          seq: 2
+        http:
+          method: POST
+          url: http://backend.vm1.test/api/saved-spots
+          headers:
+            - name: Accept
+              value: 'application/json'
+            - name: Content-Type
+              value: 'application/json'
+            - name: Authorization
+              value: 'Bearer {{user_token}}'
+          body:
+            type: json
+            data: |-
+              {
+                "spot_id": 1
+              }
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+      - info:
+          name: saved-spot.show
+          type: http
+          seq: 3
+        http:
+          method: GET
+          url: http://backend.vm1.test/api/saved-spots/1
+          headers:
+            - name: Accept
+              value: 'application/json'
+            - name: Authorization
+              value: 'Bearer {{user_token}}'
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+      - info:
+          name: saved-spot.destroy
+          type: http
+          seq: 4
+        http:
+          method: DELETE
+          url: http://backend.vm1.test/api/saved-spots/1
+          headers:
+            - name: Accept
+              value: 'application/json'
+            - name: Authorization
+              value: 'Bearer {{user_token}}'
+          auth: inherit
+        settings:
+          encodeUrl: true
+          timeout: 0
+          followRedirects: true
+          maxRedirects: 5
+bundled: true
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git
+    exportedAt: '2026-04-28T08:00:03.185Z'
+    exportedUsing: Bruno
